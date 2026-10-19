@@ -259,7 +259,7 @@ function App() {
   const visibleListings = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase()
     const result = listings.filter((item) => {
-      if (item.status === 'withdrawn') return false
+      if (item.status !== 'available') return false
       const matchesCategory = category === '全部好物' || item.category === category
       const matchesQuery = !needle || `${item.title} ${item.description} ${item.category} ${(item.group_names ?? []).join(' ')}`.toLocaleLowerCase().includes(needle)
       return matchesCategory && matchesQuery
@@ -485,7 +485,7 @@ function App() {
                 <div className="loading-state"><LoaderCircle className="spin" size={22} />正在打开车友车库…</div>
               ) : visibleListings.length === 0 ? (
                 <div className="empty-market">
-                  <h3>{query ? '没有找到相关商品' : listings.some((item) => item.status !== 'withdrawn') ? '这个分类暂时没有商品' : '集市还没有发布商品'}</h3>
+                  <h3>{query ? '没有找到相关商品' : listings.some((item) => item.status === 'available') ? '这个分类暂时没有商品' : '集市还没有发布商品'}</h3>
                   <p>{query ? '换个关键词试试看。' : '有闲置 RC 想出售？发布商品，让车友看到。'}</p>
                 </div>
               ) : (
