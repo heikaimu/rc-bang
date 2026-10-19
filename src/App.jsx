@@ -5,6 +5,8 @@ import {
   Copy, ImagePlus, LoaderCircle, LogOut, Plus, Search, Settings2,
   ShieldCheck, SlidersHorizontal, Trash2, X,
 } from 'lucide-react'
+import Cropper from 'cropperjs'
+import 'cropperjs/dist/cropper.css'
 import { supabase } from './supabase'
 import { compressImage } from './imageCompression'
 
@@ -391,23 +393,57 @@ function App() {
 
   const saveManual = async (manual) => {
     if (!supabase || !session) return
-    const payload = {
-      title: manual.title.trim(),
-      cover_url: manual.cover_url.trim(),
-      manual_url: manual.manual_url.trim(),
-      user_id: session.user.id,
-    }
+    let uploadedCoverPath = null
+    let previousCoverPath = null
+    let manualSaved = false
     try {
       setBusy(true)
+      let coverUrl = manual.cover_url || null
+      if (manual.cover_blob) {
+        uploadedCoverPath = `${session.user.id}/manuals/${crypto.randomUUID()}.jpg`
+        const { error: uploadError } = await supabase.storage.from('rc-listing-images').upload(uploadedCoverPath, manual.cover_blob, {
+          contentType: 'image/jpeg',
+          cacheControl: '31536000',
+          upsert: false,
+        })
+        if (uploadError) throw new Error(`封面上传失败：${uploadError.message}`)
+        coverUrl = supabase.storage.from('rc-listing-images').getPublicUrl(uploadedCoverPath).data.publicUrl
+      }
+      if (editingManual?.cover_url && uploadedCoverPath) {
+        try {
+          const pathname = new URL(editingManual.cover_url).pathname
+          const marker = '/storage/v1/object/public/rc-listing-images/'
+          const markerIndex = pathname.indexOf(marker)
+          const candidate = markerIndex === -1 ? '' : decodeURIComponent(pathname.slice(markerIndex + marker.length))
+          if (candidate.startsWith(`${session.user.id}/manuals/`)) previousCoverPath = candidate
+        } catch (error) {
+          console.warn('Could not identify the previous manual cover for cleanup:', error.message)
+        }
+      }
+      const payload = {
+        title: manual.title.trim(),
+        cover_url: coverUrl,
+        manual_url: manual.manual_url.trim(),
+        user_id: session.user.id,
+      }
       const result = editingManual
         ? await supabase.from('manuals').update(payload).eq('id', editingManual.id).eq('user_id', session.user.id)
         : await supabase.from('manuals').insert(payload)
       if (result.error) throw result.error
+      manualSaved = true
+      if (previousCoverPath && previousCoverPath !== uploadedCoverPath) {
+        const { error: cleanupError } = await supabase.storage.from('rc-listing-images').remove([previousCoverPath])
+        if (cleanupError) console.error('Failed to remove the previous manual cover:', cleanupError.message)
+      }
       await loadManuals()
       setManualOpen(false)
       setEditingManual(null)
       notify(editingManual ? '说明书已更新' : '说明书已发布')
     } catch (error) {
+      if (uploadedCoverPath && !manualSaved) {
+        const { error: cleanupError } = await supabase.storage.from('rc-listing-images').remove([uploadedCoverPath])
+        if (cleanupError) console.error('Failed to clean up an unreferenced manual cover:', cleanupError.message)
+      }
       notify(`保存说明书失败：${error.message}`, 'error')
     } finally {
       setBusy(false)
@@ -823,17 +859,60 @@ function ManualCard({ item, allowManage = false, onEdit, onDelete }) {
 
 function ManualModal({ manual, busy, onClose, onSave }) {
   const [title, setTitle] = useState(manual?.title ?? '')
-  const [coverUrl, setCoverUrl] = useState(manual?.cover_url ?? '')
   const [manualUrl, setManualUrl] = useState(manual?.manual_url ?? '')
+  const [coverSource, setCoverSource] = useState('')
   const [error, setError] = useState('')
+  const cropperRef = useRef(null)
+  const coverImageRef = useRef(null)
 
-  const submit = (event) => {
+  useEffect(() => {
+    if (!coverSource || !coverImageRef.current) return undefined
+    const cropper = new Cropper(coverImageRef.current, {
+      aspectRatio: 1,
+      viewMode: 1,
+      autoCropArea: 1,
+      background: false,
+      responsive: true,
+      guides: false,
+      center: true,
+      highlight: false,
+      ready() {
+        cropperRef.current = cropper
+      },
+    })
+    return () => {
+      cropper.destroy()
+      if (cropperRef.current === cropper) cropperRef.current = null
+      URL.revokeObjectURL(coverSource)
+    }
+  }, [coverSource])
+
+  const chooseCover = (event) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      setError('请选择图片文件。')
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setError('封面原图不能超过 10 MB。')
+      return
+    }
+    setError('')
+    setCoverSource(URL.createObjectURL(file))
+  }
+
+  const submit = async (event) => {
     event.preventDefault()
     const normalizedTitle = title.trim()
-    const normalizedCover = coverUrl.trim()
     const normalizedManual = manualUrl.trim()
     if (!normalizedTitle || !normalizedManual) {
       setError('标题和链接不能为空。')
+      return
+    }
+    if (!coverSource && !manual?.cover_url) {
+      setError('请上传说明书封面图。')
       return
     }
     try {
@@ -843,16 +922,31 @@ function ManualModal({ manual, busy, onClose, onSave }) {
       setError('说明书链接格式不正确，请填写 http:// 或 https:// 开头的完整链接。')
       return
     }
-    if (normalizedCover) {
-      try {
-        const parsedCover = new URL(normalizedCover)
-        if (!['http:', 'https:'].includes(parsedCover.protocol)) throw new Error()
-      } catch {
-        setError('封面图链接格式不正确，请填写 http:// 或 https:// 开头的完整链接。')
-        return
+    try {
+      let coverBlob = null
+      if (coverSource) {
+        const canvas = cropperRef.current?.getCroppedCanvas({
+          width: 200,
+          height: 200,
+          fillColor: '#ffffff',
+          imageSmoothingEnabled: true,
+          imageSmoothingQuality: 'high',
+        })
+        if (!canvas) throw new Error('封面裁剪尚未准备好，请稍后重试。')
+        coverBlob = await new Promise((resolve, reject) => {
+          canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('封面裁剪失败，请重试。')), 'image/jpeg', 0.88)
+        })
       }
+      setError('')
+      onSave({
+        title: normalizedTitle,
+        cover_url: manual?.cover_url ?? null,
+        cover_blob: coverBlob,
+        manual_url: normalizedManual,
+      })
+    } catch (cropError) {
+      setError(cropError.message)
     }
-    onSave({ title: normalizedTitle, cover_url: normalizedCover || null, manual_url: normalizedManual })
   }
 
   return (
@@ -860,10 +954,18 @@ function ManualModal({ manual, busy, onClose, onSave }) {
       <div className="modal-topline"><span>RC MANUALS</span><button onClick={onClose} aria-label="关闭"><X size={19} /></button></div>
       <div className="modal-kicker">SHARE A GUIDE</div>
       <h2>{manual ? '编辑说明书' : '分享说明书'}</h2>
-      <p className="modal-subtitle">填写标题、封面图和文档链接，车友可直接点击查看。</p>
+      <p className="modal-subtitle">上传方形封面，拖动调整裁剪范围，保存为 200 × 200 JPEG。</p>
       <form className="form-stack listing-form" onSubmit={submit}>
         <label>标题<input required maxLength="80" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="例如：SCX10 III 组装说明书" /></label>
-        <label>封面图链接 <span className="optional-label">选填</span><input type="url" maxLength="1000" value={coverUrl} onChange={(event) => setCoverUrl(event.target.value)} placeholder="https://example.com/cover.jpg" /></label>
+        <div className="manual-cover-field">
+          <span className="form-section-label">封面图 {manual?.cover_url && !coverSource && <span>已有封面，上传新图可替换</span>}</span>
+          <label className="button button-outline avatar-upload-button manual-cover-upload"><Camera size={15} />{coverSource || manual?.cover_url ? '更换封面图' : '上传封面图'}<input type="file" accept="image/*" onChange={chooseCover} /></label>
+          {coverSource
+            ? <div className="manual-crop-frame"><img ref={coverImageRef} src={coverSource} alt="裁剪说明书封面" /></div>
+            : manual?.cover_url
+              ? <img className="manual-cover-existing" src={manual.cover_url} alt="当前说明书封面" />
+              : <span className="avatar-help">支持 JPG / PNG / WEBP，原图不超过 10 MB</span>}
+        </div>
         <label>说明书链接<input required type="url" maxLength="1000" value={manualUrl} onChange={(event) => setManualUrl(event.target.value)} placeholder="https://example.com/manual.pdf" /></label>
         {error && <p className="form-error">{error}</p>}
         <button className="button button-primary full-button" type="submit" disabled={busy}>{busy ? '正在保存…' : (manual ? '保存说明书' : '发布说明书')}<ArrowRight size={16} /></button>
