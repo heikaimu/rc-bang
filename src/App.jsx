@@ -29,6 +29,28 @@ function listingStatusLabel(status) {
   return '售卖中'
 }
 
+function getGroupMatch(item, viewerGroups, viewerId) {
+  if (item.user_id && item.user_id === viewerId) {
+    return { label: '我的发布', title: '这是你发布的商品', type: 'own' }
+  }
+  if (!viewerId) {
+    return { label: '登录后查看同群', title: '登录并填写所在群后，可查看是否与卖家同群', type: 'unknown' }
+  }
+  const sharedGroups = (item.group_names ?? []).filter((group) => (viewerGroups ?? []).includes(group))
+  if (sharedGroups.length) {
+    return {
+      label: sharedGroups.length === 1 ? `同群 · ${sharedGroups[0]}` : `同群 · ${sharedGroups.length} 个群`,
+      title: `共同群聊：${sharedGroups.join('、')}`,
+      type: 'shared',
+    }
+  }
+  return {
+    label: viewerGroups?.length ? '暂无共同群' : '填写群聊后匹配',
+    title: viewerGroups?.length ? '你和卖家当前没有相同的群聊' : '在个人资料中填写所在群，即可查看是否与卖家同群',
+    type: 'none',
+  }
+}
+
 function GroupMultiSelect({ value = [], onChange }) {
   const [custom, setCustom] = useState(value.some((group) => !RC_GROUPS.includes(group)))
   const customGroup = value.find((group) => !RC_GROUPS.includes(group)) ?? ''
@@ -490,7 +512,13 @@ function App() {
                 </div>
               ) : (
                 <div className="listing-grid">
-                  {visibleListings.map((item) => <ListingCard key={item.id} item={item} onClick={() => setSelectedListing(item)} />)}
+                  {visibleListings.map((item) => <ListingCard
+                    key={item.id}
+                    item={item}
+                    viewerGroups={profile.group_names ?? []}
+                    viewerId={session?.user?.id}
+                    onClick={() => setSelectedListing(item)}
+                  />)}
                 </div>
               )}
           </section>
@@ -525,18 +553,29 @@ function App() {
         onSave={saveListing}
       />}
       {profileOpen && <ProfileModal profile={profile} busy={busy} onClose={() => setProfileOpen(false)} onSave={saveProfile} />}
-      {selectedListing && <ListingDetail item={selectedListing} onClose={() => setSelectedListing(null)} onContact={notify} />}
+      {selectedListing && <ListingDetail
+        item={selectedListing}
+        viewerGroups={profile.group_names ?? []}
+        viewerId={session?.user?.id}
+        onClose={() => setSelectedListing(null)}
+        onContact={notify}
+      />}
       {notice && <div className={`toast ${notice.type === 'error' ? 'toast-error' : ''}`}><span>{notice.type === 'error' ? '!' : <Check size={15} />}</span>{notice.message}<button onClick={() => setNotice(null)} aria-label="关闭提示"><X size={15} /></button></div>}
     </div>
   )
 }
 
-function ListingCard({ item, onClick }) {
+function ListingCard({ item, viewerGroups, viewerId, onClick }) {
+  const groupMatch = getGroupMatch(item, viewerGroups, viewerId)
   return (
     <button className={`listing-card ${item.status === 'sold' ? 'is-sold' : ''}`} onClick={onClick}>
       <div className="card-image">
         {item.images?.[0] ? <img src={item.images[0]} alt={item.title} loading="lazy" /> : <div className="image-placeholder"><span>RC</span></div>}
         <span className="card-category">{item.category}</span>
+        <span className={`group-match-badge group-match-${groupMatch.type}`} title={groupMatch.title}>
+          {groupMatch.type === 'shared' ? <ShieldCheck size={12} /> : null}
+          {groupMatch.label}
+        </span>
         {item.status === 'sold' && <span className="sold-ribbon">已售</span>}
         {item.images?.length > 1 && <span className="image-count">▧ {item.images.length}</span>}
         <span className="card-open"><ArrowRight size={17} /></span>
@@ -753,8 +792,10 @@ function ProfileModal({ profile, busy, onClose, onSave }) {
   )
 }
 
-function ListingDetail({ item, onClose, onContact }) {
+function ListingDetail({ item, viewerGroups, viewerId, onClose, onContact }) {
   const [imageIndex, setImageIndex] = useState(0)
+  const [zoomed, setZoomed] = useState(false)
+  const groupMatch = getGroupMatch(item, viewerGroups, viewerId)
   const copyContact = async () => {
     try {
       await navigator.clipboard.writeText(item.wechat_id)
@@ -764,34 +805,46 @@ function ListingDetail({ item, onClose, onContact }) {
     }
   }
   const photos = item.images?.length ? item.images : []
+  const changeImage = (direction) => setImageIndex((current) => (current + direction + photos.length) % photos.length)
   return (
     <ModalFrame onClose={onClose} size="detail-modal">
       <div className="detail-layout">
         <div className="detail-gallery">
-          {photos[imageIndex] ? <img className="detail-main-image" src={photos[imageIndex]} alt={item.title} /> : <div className="image-placeholder detail-placeholder"><span>RC</span></div>}
+          {photos[imageIndex]
+            ? <button className="detail-image-open" onClick={() => setZoomed(true)} aria-label="点击查看商品大图">
+                <img className="detail-main-image" src={photos[imageIndex]} alt={item.title} />
+              </button>
+            : <div className="image-placeholder detail-placeholder"><span>RC</span></div>}
           <button className="gallery-close" onClick={onClose} aria-label="关闭"><X size={19} /></button>
-          {photos.length > 1 && <><button className="gallery-arrow gallery-prev" onClick={() => setImageIndex((imageIndex - 1 + photos.length) % photos.length)} aria-label="上一张"><ArrowLeft size={17} /></button><button className="gallery-arrow gallery-next" onClick={() => setImageIndex((imageIndex + 1) % photos.length)} aria-label="下一张"><ArrowRight size={17} /></button><div className="gallery-dots">{photos.map((_, index) => <button key={index} className={index === imageIndex ? 'gallery-dot active' : 'gallery-dot'} onClick={() => setImageIndex(index)} aria-label={`第 ${index + 1} 张`} />)}</div></>}
+          {photos.length > 1 && <><button className="gallery-arrow gallery-prev" onClick={() => changeImage(-1)} aria-label="上一张"><ArrowLeft size={17} /></button><button className="gallery-arrow gallery-next" onClick={() => changeImage(1)} aria-label="下一张"><ArrowRight size={17} /></button><div className="gallery-dots">{photos.map((_, index) => <button key={index} className={index === imageIndex ? 'gallery-dot active' : 'gallery-dot'} onClick={() => setImageIndex(index)} aria-label={`第 ${index + 1} 张`} />)}</div></>}
           <span className="detail-photo-count">{String(imageIndex + 1).padStart(2, '0')} / {String(photos.length || 1).padStart(2, '0')}</span>
         </div>
         <div className="detail-copy">
-          <div className="modal-topline"><span>{item.category} / RC COMMUNITY</span><span className={`detail-status detail-${item.status || 'available'}`}><i />{listingStatusLabel(item.status)}</span></div>
-          <div className="detail-date">发布于 {formatDate(item.created_at)}</div>
+          <div className="modal-topline"><span>{item.category} · 发布于 {formatDate(item.created_at)}</span><span className={`detail-status detail-${item.status || 'available'}`}><i />{listingStatusLabel(item.status)}</span></div>
           <h2>{item.title}</h2><div className="detail-price">¥{Number(item.price).toLocaleString()}</div>
-          <div className="detail-divider" />
-          <div className="detail-description-label">ABOUT THIS ITEM</div><p className="detail-description">{item.description}</p>
-          <div className="detail-divider" />
+          <p className="detail-description">{item.description}</p>
           <div className="seller-block">
             {item.seller_avatar_url
               ? <img className="seller-avatar seller-large" src={item.seller_avatar_url} alt="" />
               : <span className="seller-avatar seller-large">{(item.seller_name || '车')[0]}</span>}
-            <div><b>{item.seller_name || 'RC 车友'}</b><span>共同群聊：{(item.group_names ?? []).join('、') || '未填写'}</span></div>
-            <span className="seller-badge"><ShieldCheck size={13} />同群车友</span>
+            <div className="seller-info"><b>{item.seller_name || 'RC 车友'}</b><span>微信号：{item.wechat_id || '未填写'}</span></div>
+            <span className={`seller-badge group-match-${groupMatch.type}`} title={`${groupMatch.title}；卖家所在群：${(item.group_names ?? []).join('、') || '未填写'}`}>
+              {groupMatch.type === 'shared' ? <ShieldCheck size={13} /> : null}{groupMatch.label}
+            </span>
+            <button className="copy-wechat" disabled={!item.wechat_id || item.status !== 'available'} onClick={copyContact} aria-label="复制卖家微信号"><Copy size={15} />复制</button>
           </div>
-          <div className="contact-card"><span>WECHAT ID</span><b>{item.wechat_id || '未填写'}</b><button disabled={!item.wechat_id || item.status !== 'available'} onClick={copyContact}>{item.status !== 'available' ? listingStatusLabel(item.status) : <><Copy size={15} />复制微信号</>}</button></div>
           {item.xianyu_url && <a className="xianyu-link" href={item.xianyu_url} target="_blank" rel="noreferrer noopener">前往闲鱼查看商品 <ArrowRight size={14} /></a>}
-          <p className="detail-tip">建议先在群内确认车况和交易方式，安心交易。</p>
         </div>
       </div>
+      {zoomed && <div className="image-lightbox" role="dialog" aria-modal="true" aria-label="商品图片大图" onMouseDown={(event) => { if (event.target === event.currentTarget) setZoomed(false) }}>
+        <button className="lightbox-close" onClick={() => setZoomed(false)} aria-label="关闭大图"><X size={22} /></button>
+        <img src={photos[imageIndex]} alt={`${item.title}，第 ${imageIndex + 1} 张大图`} />
+        {photos.length > 1 && <>
+          <button className="lightbox-arrow lightbox-prev" onClick={() => changeImage(-1)} aria-label="上一张"><ArrowLeft size={20} /></button>
+          <button className="lightbox-arrow lightbox-next" onClick={() => changeImage(1)} aria-label="下一张"><ArrowRight size={20} /></button>
+          <span className="lightbox-count">{imageIndex + 1} / {photos.length}</span>
+        </>}
+      </div>}
     </ModalFrame>
   )
 }

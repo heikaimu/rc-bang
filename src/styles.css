@@ -117,6 +117,10 @@ button { cursor: pointer; }
 .card-image { position: relative; height: 199px; overflow: hidden; background: #eceee7; }
 .card-image img, .manage-thumb img, .upload-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .card-category { position: absolute; z-index: 1; top: 12px; left: 12px; background: rgba(250,250,247,.9); padding: 5px 8px; font-size: 9px; }
+.group-match-badge { position: absolute; z-index: 1; top: 11px; right: 11px; display: inline-flex; align-items: center; gap: 4px; max-width: calc(100% - 82px); overflow: hidden; padding: 6px 8px; border-radius: 4px; text-overflow: ellipsis; white-space: nowrap; font-size: 9px; font-weight: 700; }
+.group-match-shared { color: #246b52; background: #e5f3e9; }
+.group-match-none { color: #79766a; background: #f0efe9; }
+.group-match-unknown, .group-match-own { color: #6d7471; background: #eef0ed; }
 .image-count { position: absolute; bottom: 12px; left: 12px; background: rgba(32,33,31,.7); color: #fff; font: 9px var(--mono); padding: 5px 7px; }
 .card-open { position: absolute; bottom: 12px; right: 12px; display: grid; place-items: center; background: #f26536; color: white; width: 29px; height: 29px; opacity: 0; transition: opacity .18s; }
 .listing-card:hover .card-open { opacity: 1; }
@@ -220,18 +224,23 @@ button { cursor: pointer; }
 .avatar-zoom input { accent-color: var(--orange); }
 .avatar-help { color: #999b94; font-size: 9px; }
 .detail-layout { display: grid; grid-template-columns: 1.05fr .95fr; min-height: 520px; }
-.detail-gallery { position: relative; background: #e9ebe3; min-height: 520px; display: grid; place-items: center; overflow: hidden; }.detail-main-image { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }.detail-placeholder { position: absolute; inset: 0; }
+.detail-gallery { position: relative; background: #e9ebe3; min-height: 520px; display: grid; place-items: center; overflow: hidden; }
+.detail-image-open { position: absolute; inset: 0; z-index: 1; display: grid; place-items: center; width: 100%; height: 100%; padding: 20px; border: 0; background: transparent; cursor: zoom-in; }
+.detail-main-image { display: block; width: 100%; height: 100%; object-fit: contain; }
+.detail-placeholder { position: absolute; inset: 0; }
 .gallery-close { position: absolute; top: 16px; left: 16px; z-index: 2; display: grid; place-items: center; width: 34px; height: 34px; border: 0; color: #fff; background: rgba(28,29,26,.5); }
 .gallery-arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 33px; height: 33px; display: grid; place-items: center; border: 0; background: rgba(250,250,247,.78); color: #30312d; }.gallery-prev { left: 14px; }.gallery-next { right: 14px; }
 .gallery-dots { position: absolute; bottom: 17px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }.gallery-dot { width: 6px; height: 6px; border-radius: 50%; border: 0; padding: 0; background: rgba(255,255,255,.55); }.gallery-dot.active { background: #f26536; }
 .detail-photo-count { position: absolute; bottom: 15px; right: 16px; color: white; font: 9px var(--mono); text-shadow: 0 1px 3px #333; }
 .detail-copy { padding: 26px 27px 23px; }.detail-copy .modal-topline { font-size: 8px; padding-bottom: 14px; }.detail-status { display: flex; align-items: center; gap: 5px; color: #6b8063; font: 9px 'Noto Sans SC', sans-serif; letter-spacing: 0; }.detail-sold, .detail-withdrawn { color: #92948d; }.detail-sold i, .detail-withdrawn i { background: #aaa; }
-.detail-date { margin-top: 22px; color: #94968f; font: 9px var(--mono); }.detail-copy h2 { margin: 7px 0 5px; font-size: 22px; line-height: 1.45; }.detail-price { font: 500 23px var(--mono); color: #282925; }
-.detail-divider { height: 1px; background: #e8e9e3; margin: 19px 0; }.detail-description-label { color: #999b94; font: 8px var(--mono); letter-spacing: .8px; }.detail-description { font-size: 11px; line-height: 1.9; color: #65675f; white-space: pre-wrap; max-height: 89px; overflow-y: auto; margin: 8px 0 0; }
-.seller-block { display: flex; align-items: center; gap: 9px; }.seller-large { width: 34px; height: 34px; }.seller-block > div { display: flex; flex-direction: column; gap: 4px; }.seller-block b { font-size: 10px; }.seller-block > div span { font-size: 9px; color: #91938c; }.seller-badge { display: flex; align-items: center; gap: 4px; margin-left: auto; color: #74856e; font-size: 8px; }
+.detail-copy h2 { margin: 20px 0 7px; font-size: 25px; line-height: 1.45; }.detail-price { font: 500 23px var(--mono); color: #282925; }
+.detail-description { margin: 19px 0 24px; color: #55574f; font-size: 13px; line-height: 1.9; white-space: pre-wrap; overflow-wrap: anywhere; }
+.seller-block { display: flex; align-items: center; gap: 9px; padding: 11px 0; border-top: 1px solid #e8e9e3; border-bottom: 1px solid #e8e9e3; }.seller-large { width: 34px; height: 34px; }.seller-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }.seller-info b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }.seller-info span { color: #91938c; font: 9px var(--mono); overflow-wrap: anywhere; }.seller-badge { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; padding: 5px 7px; border-radius: 4px; font-size: 8px; white-space: nowrap; }.copy-wechat { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 30px; padding: 0 8px; border: 0; border-radius: 4px; color: #fff; background: #282925; font-size: 9px; white-space: nowrap; }.copy-wechat:disabled { opacity: .5; cursor: not-allowed; }
 .xianyu-link { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 12px; padding: 10px; border: 1px solid #f1d6c6; color: #a7532f; background: #fff8f3; text-decoration: none; font-size: 10px; font-weight: 700; }.xianyu-link:hover { background: #fff0e6; }
-.contact-card { display: grid; grid-template-columns: 1fr auto; gap: 8px 10px; align-items: center; background: #f0f1ea; padding: 12px; margin-top: 17px; }.contact-card > span { font: 8px var(--mono); color: #92948d; letter-spacing: .5px; }.contact-card b { grid-column: 1; font: 500 13px var(--mono); word-break: break-all; }.contact-card button { grid-column: 2; grid-row: 1 / span 2; min-width: 104px; height: 33px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 0; background: #282925; color: white; font-size: 9px; }.contact-card button:disabled { opacity: .5; cursor: not-allowed; }
-.detail-tip { color: #999b94; font-size: 9px; margin: 11px 0 0; line-height: 1.5; }
+.image-lightbox { position: fixed; z-index: 30; inset: 0; display: grid; place-items: center; padding: 50px; background: rgba(12,13,12,.94); }
+.image-lightbox > img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; }
+.lightbox-close, .lightbox-arrow { position: absolute; display: grid; place-items: center; border: 0; color: #fff; background: rgba(255,255,255,.14); }
+.lightbox-close { top: 18px; right: 18px; width: 42px; height: 42px; }.lightbox-arrow { top: 50%; width: 42px; height: 42px; transform: translateY(-50%); }.lightbox-prev { left: 18px; }.lightbox-next { right: 18px; }.lightbox-count { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); color: #fff; font: 12px var(--mono); }
 .toast { position: fixed; z-index: 20; bottom: 24px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 9px; background: #282925; color: #fff; padding: 12px 14px; box-shadow: 0 8px 25px rgba(0,0,0,.16); font-size: 11px; max-width: calc(100vw - 30px); animation: modal-in .2s; }.toast > span:first-child { color: #a9ce9c; display: grid; place-items: center; }.toast button { margin-left: 5px; background: transparent; border: 0; color: #b8bab3; padding: 0; display: grid; }.toast-error > span:first-child { color: #fa9c80; }
 
 @media (max-width: 1300px) {
@@ -268,4 +277,14 @@ button { cursor: pointer; }
   .section-heading p { font-size: 9px; }
   .market-toolbar { margin-top: 17px; }
   .empty-market { min-height: 160px; }
+  .detail-image-open { padding: 12px; }
+  .detail-copy h2 { margin-top: 14px; }
+  .detail-description { max-height: none; margin: 14px 0 18px; font-size: 12px; }
+  .seller-block { flex-wrap: wrap; gap: 8px; }
+  .seller-info { flex: 1; }
+  .seller-badge { margin-left: 43px; }
+  .copy-wechat { margin-left: auto; }
+  .image-lightbox { padding: 48px 14px; }
+  .lightbox-prev { left: 8px; }
+  .lightbox-next { right: 8px; }
 }
