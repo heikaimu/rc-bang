@@ -207,6 +207,9 @@ function App() {
   const [profile, setProfile] = useState(EMPTY_PROFILE)
   const [listings, setListings] = useState([])
   const [manuals, setManuals] = useState([])
+  const [galleryPhotos, setGalleryPhotos] = useState([])
+  const [galleryLoading, setGalleryLoading] = useState(false)
+  const [galleryError, setGalleryError] = useState('')
   const [page, setPage] = useState('market')
   const [category, setCategory] = useState('全部好物')
   const [query, setQuery] = useState('')
@@ -219,6 +222,7 @@ function App() {
   const [profileOpen, setProfileOpen] = useState(false)
   const [notice, setNotice] = useState(null)
   const [busy, setBusy] = useState(false)
+  const [uploadingPhotos, setUploadingPhotos] = useState(false)
   const [loading, setLoading] = useState(true)
   const configured = Boolean(supabase)
 
@@ -254,6 +258,24 @@ function App() {
       return
     }
     setManuals(data ?? [])
+  }, [])
+
+  const loadGalleryPhotos = useCallback(async () => {
+    if (!supabase) {
+      setGalleryPhotos([])
+      setGalleryLoading(false)
+      return
+    }
+    setGalleryLoading(true)
+    setGalleryError('')
+    const { data, error } = await supabase.from('rc_gallery_photos').select('*').order('created_at', { ascending: false })
+    if (error) {
+      setGalleryError(`读取靓图失败：${error.message}`)
+      setGalleryLoading(false)
+      return
+    }
+    setGalleryPhotos(data ?? [])
+    setGalleryLoading(false)
   }, [])
 
   const loadProfile = useCallback(async (user) => {
@@ -292,11 +314,12 @@ function App() {
     })
     loadListings()
     loadManuals()
+    loadGalleryPhotos()
     return () => {
       active = false
       subscription.unsubscribe()
     }
-  }, [loadListings, loadManuals, loadProfile])
+  }, [loadListings, loadManuals, loadGalleryPhotos, loadProfile])
 
   const visibleListings = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase()
@@ -462,6 +485,67 @@ function App() {
     }
   }
 
+  const uploadGalleryPhotos = async (event) => {
+    const files = Array.from(event.target.files ?? [])
+    event.target.value = ''
+    if (!files.length) return
+    if (!session) {
+      setAuthOpen(true)
+      return
+    }
+    const remaining = 10 - galleryPhotos.filter((photo) => photo.user_id === session.user.id).length
+    if (files.length > remaining) {
+      notify(`每位用户最多上传 10 张，目前还可上传 ${remaining} 张。`, 'error')
+      return
+    }
+    setUploadingPhotos(true)
+    const uploadedPaths = []
+    try {
+      const rows = []
+      for (const file of files) {
+        if (file.size > 20 * 1024 * 1024) throw new Error(`${file.name} 超过 20 MB，请选择较小的原图。`)
+        const compressed = await compressImage(file)
+        const path = `${session.user.id}/gallery/${crypto.randomUUID()}.jpg`
+        const { error: uploadError } = await supabase.storage.from('rc-listing-images').upload(path, compressed, {
+          contentType: 'image/jpeg',
+          cacheControl: '31536000',
+          upsert: false,
+        })
+        if (uploadError) throw new Error(`上传图片失败：${uploadError.message}`)
+        uploadedPaths.push(path)
+        rows.push({ user_id: session.user.id, storage_path: path })
+      }
+      const { error: insertError } = await supabase.from('rc_gallery_photos').insert(rows)
+      if (insertError) throw insertError
+      await loadGalleryPhotos()
+      notify(`成功上传 ${rows.length} 张靓图`)
+    } catch (error) {
+      if (uploadedPaths.length) {
+        const { error: cleanupError } = await supabase.storage.from('rc-listing-images').remove(uploadedPaths)
+        if (cleanupError) console.error('Failed to clean up unreferenced gallery images:', cleanupError.message)
+      }
+      notify(`上传靓图失败：${error.message}`, 'error')
+    } finally {
+      setUploadingPhotos(false)
+    }
+  }
+
+  const removeGalleryPhoto = async (photo) => {
+    if (!window.confirm('确定删除这张照片吗？')) return
+    const { error } = await supabase.from('rc_gallery_photos').delete().eq('id', photo.id).eq('user_id', session.user.id)
+    if (error) {
+      notify(`删除照片失败：${error.message}`, 'error')
+      return
+    }
+    setGalleryPhotos((current) => current.filter((item) => item.id !== photo.id))
+    const { error: storageError } = await supabase.storage.from('rc-listing-images').remove([photo.storage_path])
+    if (storageError) {
+      notify(`照片记录已删除，但图片文件清理失败：${storageError.message}`, 'error')
+      return
+    }
+    notify('照片已删除')
+  }
+
   const changeStatus = async (item, status) => {
     const { error } = await supabase.from('listings').update({ status }).eq('id', item.id).eq('user_id', session.user.id)
     if (error) {
@@ -572,6 +656,7 @@ function App() {
         <nav className="main-nav" aria-label="主导航">
           <button className={page === 'market' ? 'nav-link active' : 'nav-link'} onClick={() => setPage('market')}>逛集市</button>
           <button className={page === 'manuals' ? 'nav-link active' : 'nav-link'} onClick={() => setPage('manuals')}>说明书</button>
+          <button className={page === 'gallery' ? 'nav-link active' : 'nav-link'} onClick={() => setPage('gallery')}>靓图欣赏</button>
         </nav>
         <div className="header-actions">
           {session ? (
@@ -643,7 +728,7 @@ function App() {
             )}
             {session && <button className="manage-signout" onClick={signOut}><LogOut size={15} />退出登录</button>}
           </section>
-        ) : (
+        ) : page === 'manuals' ? (
           <section className="manuals-page">
             <div className="manuals-heading">
               <div>
@@ -667,6 +752,56 @@ function App() {
                   onEdit={() => { setEditingManual(manual); setManualOpen(true) }}
                   onDelete={() => removeManual(manual)}
                 />)}
+              </div>
+            )}
+          </section>
+        ) : (
+          <section className="gallery-page">
+            <div className="manuals-heading">
+              <div>
+                <span className="section-kicker">RC PHOTO GALLERY</span>
+                <h1>靓图欣赏</h1>
+                <p>分享你的 RC 美照，图片自动压缩至 1920 × 1080 范围内，每位车友最多上传 10 张。</p>
+              </div>
+              <div className="gallery-upload-area">
+                {session ? (
+                  <>
+                    <span className="gallery-limit">{galleryPhotos.filter((photo) => photo.user_id === session.user.id).length} / 10 张</span>
+                    <label className={`button button-primary gallery-upload${uploadingPhotos ? ' is-uploading' : ''}`}>
+                      {uploadingPhotos ? <><LoaderCircle className="spin" size={16} />正在压缩上传…</> : <><ImagePlus size={16} />上传靓图</>}
+                      <input type="file" accept="image/*" multiple disabled={uploadingPhotos || galleryPhotos.filter((photo) => photo.user_id === session.user.id).length >= 10} onChange={uploadGalleryPhotos} />
+                    </label>
+                  </>
+                ) : (
+                  <button className="button button-primary" onClick={() => setAuthOpen(true)}>登录后上传靓图 <ArrowRight size={16} /></button>
+                )}
+              </div>
+            </div>
+            {galleryLoading ? (
+              <div className="loading-state"><LoaderCircle className="spin" size={22} />正在加载车友靓图…</div>
+            ) : galleryError ? (
+              <div className="setup-message"><Settings2 size={20} /><div><b>暂时无法读取靓图</b><p>{galleryError} 请确认已在 Supabase 执行靓图数据表 SQL。</p></div></div>
+            ) : galleryPhotos.length === 0 ? (
+              <div className="empty-market gallery-empty">
+                <h3>还没有车友分享靓图</h3>
+                <p>上传你的 RC 爱车照片，让大家一起欣赏。</p>
+              </div>
+            ) : (
+              <div className="gallery-grid">
+                {galleryPhotos.map((photo) => {
+                  const imageUrl = supabase.storage.from('rc-listing-images').getPublicUrl(photo.storage_path).data.publicUrl
+                  return (
+                    <article className="gallery-card" key={photo.id}>
+                      <a className="gallery-image" href={imageUrl} target="_blank" rel="noreferrer noopener" aria-label="新窗口查看原图">
+                        <img src={imageUrl} alt={`RC 车友靓图，${formatDate(photo.created_at)}上传`} loading="lazy" />
+                      </a>
+                      <div className="gallery-card-footer">
+                        <time>{formatDate(photo.created_at)}</time>
+                        {photo.user_id === session?.user?.id && <button className="gallery-delete" onClick={() => removeGalleryPhoto(photo)} aria-label="删除这张照片"><Trash2 size={15} />删除</button>}
+                      </div>
+                    </article>
+                  )
+                })}
               </div>
             )}
           </section>
