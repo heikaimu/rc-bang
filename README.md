@@ -9,8 +9,9 @@
 3. 将 `.env.example` 复制为 `.env.local`，填写 Supabase Project URL 和 publishable key。
 4. 在 Supabase Dashboard 的 SQL Editor 中运行 [`supabase/schema.sql`](./supabase/schema.sql)。如果数据库已创建，重新执行此脚本会迁移原有群名字段、添加注册频率限制、说明书资料表，以及头像和闲鱼链接所需字段与 Storage 策略。
 5. 若只需增加“靓图欣赏”，运行增量脚本 [`supabase/rc_gallery.sql`](./supabase/rc_gallery.sql)，不会改动现有账号、商品或说明书数据。
-6. 安装 Supabase CLI 并关联项目，然后部署昵称注册 Edge Function：`supabase functions deploy register-nickname --project-ref ygklgnablhnitcsptqor`。
-7. 启动开发服务器：`npm run dev`
+6. 将提供的车型说明书目录导入数据库时，在 Supabase SQL Editor 中运行 [`supabase/import_manual_catalog.sql`](./supabase/import_manual_catalog.sql)。这些记录为公共只读资料，不归属个人账号；脚本可重复执行，不会按相同 PDF 链接重复插入。
+7. 安装 Supabase CLI 并关联项目，然后部署昵称注册 Edge Function：`supabase functions deploy register-nickname --project-ref ygklgnablhnitcsptqor`。
+8. 启动开发服务器：`npm run dev`
 
 当前项目目录已包含本地 `.env.local` 配置；该文件已加入 `.gitignore`。
 

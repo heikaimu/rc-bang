@@ -30,13 +30,15 @@ create table if not exists public.listings (
 
 create table if not exists public.manuals (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users (id) on delete cascade,
+  user_id uuid references auth.users (id) on delete cascade,
   title text not null check (char_length(title) between 1 and 80),
   cover_url text,
   manual_url text not null check (char_length(manual_url) between 1 and 2048),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.manuals alter column user_id drop not null;
 
 create table if not exists public.rc_gallery_photos (
   id uuid primary key default gen_random_uuid(),
