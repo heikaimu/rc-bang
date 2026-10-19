@@ -204,12 +204,15 @@ function App() {
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(EMPTY_PROFILE)
   const [listings, setListings] = useState([])
+  const [manuals, setManuals] = useState([])
   const [page, setPage] = useState('market')
   const [category, setCategory] = useState('全部好物')
   const [query, setQuery] = useState('')
   const [authOpen, setAuthOpen] = useState(false)
   const [listingOpen, setListingOpen] = useState(false)
+  const [manualOpen, setManualOpen] = useState(false)
   const [editingListing, setEditingListing] = useState(null)
+  const [editingManual, setEditingManual] = useState(null)
   const [selectedListing, setSelectedListing] = useState(null)
   const [profileOpen, setProfileOpen] = useState(false)
   const [notice, setNotice] = useState(null)
@@ -236,6 +239,20 @@ function App() {
     setListings(data ?? [])
     setLoading(false)
   }, [notify])
+
+  const loadManuals = useCallback(async () => {
+    if (!supabase) {
+      setManuals([])
+      return
+    }
+    const { data, error } = await supabase.from('manuals').select('*').order('created_at', { ascending: false })
+    if (error) {
+      console.warn('Manuals query failed:', error.message)
+      setManuals([])
+      return
+    }
+    setManuals(data ?? [])
+  }, [])
 
   const loadProfile = useCallback(async (user) => {
     if (!user || !supabase) {
@@ -272,11 +289,12 @@ function App() {
       window.setTimeout(() => loadProfile(currentSession?.user), 0)
     })
     loadListings()
+    loadManuals()
     return () => {
       active = false
       subscription.unsubscribe()
     }
-  }, [loadListings, loadProfile])
+  }, [loadListings, loadManuals, loadProfile])
 
   const visibleListings = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase()
@@ -296,6 +314,15 @@ function App() {
     }
     setEditingListing(null)
     setListingOpen(true)
+  }
+
+  const openManualCreate = () => {
+    if (!session) {
+      setAuthOpen(true)
+      return
+    }
+    setEditingManual(null)
+    setManualOpen(true)
   }
 
   const uploadImages = async (images) => {
@@ -359,6 +386,43 @@ function App() {
       notify(`保存失败：${error.message}`, 'error')
     } finally {
       setBusy(false)
+    }
+  }
+
+  const saveManual = async (manual) => {
+    if (!supabase || !session) return
+    const payload = {
+      title: manual.title.trim(),
+      cover_url: manual.cover_url.trim(),
+      manual_url: manual.manual_url.trim(),
+      user_id: session.user.id,
+    }
+    try {
+      setBusy(true)
+      const result = editingManual
+        ? await supabase.from('manuals').update(payload).eq('id', editingManual.id).eq('user_id', session.user.id)
+        : await supabase.from('manuals').insert(payload)
+      if (result.error) throw result.error
+      await loadManuals()
+      setManualOpen(false)
+      setEditingManual(null)
+      notify(editingManual ? '说明书已更新' : '说明书已发布')
+    } catch (error) {
+      notify(`保存说明书失败：${error.message}`, 'error')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const removeManual = async (manual) => {
+    if (!window.confirm('确定删除这份说明书吗？')) return
+    try {
+      const { error } = await supabase.from('manuals').delete().eq('id', manual.id).eq('user_id', session.user.id)
+      if (error) throw error
+      setManuals((current) => current.filter((item) => item.id !== manual.id))
+      notify('说明书已删除')
+    } catch (error) {
+      notify(`删除说明书失败：${error.message}`, 'error')
     }
   }
 
@@ -461,6 +525,7 @@ function App() {
   }
 
   const myListings = listings.filter((item) => item.user_id === session?.user?.id)
+  const myManuals = manuals.filter((item) => item.user_id === session?.user?.id)
 
   return (
     <div className="app-shell">
@@ -501,6 +566,25 @@ function App() {
                 </div>
                 <label className="search-box"><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜一搜车、配件或关键词" /><span className="search-shortcut"><SlidersHorizontal size={13} /></span></label>
               </div>
+              <div className="manuals-section">
+                <div className="manuals-heading">
+                  <div>
+                    <span className="section-kicker">RC MANUALS</span>
+                    <h2>说明书共享</h2>
+                  </div>
+                  {session && <button className="button button-outline" onClick={openManualCreate}>发布说明书</button>}
+                </div>
+                {manuals.length === 0 ? (
+                  <div className="empty-market manual-empty">
+                    <h3>还没有说明书资料</h3>
+                    <p>上传常用的装车、调参、保养说明，方便车友直接查阅。</p>
+                  </div>
+                ) : (
+                  <div className="manual-grid">
+                    {manuals.map((manual) => <ManualCard key={manual.id} item={manual} onEdit={() => { setEditingManual(manual); setManualOpen(true) }} onDelete={() => removeManual(manual)} />)}
+                  </div>
+                )}
+              </div>
               {!configured ? (
                 <div className="setup-message"><Settings2 size={20} /><div><b>还差一步就能开张啦</b><p>请先配置 Supabase 环境变量，并在项目数据库中运行 <code>supabase/schema.sql</code>。</p></div></div>
               ) : loading ? (
@@ -530,12 +614,29 @@ function App() {
             </div>
             {!session ? (
               <div className="manage-login"><CircleUserRound size={28} /><h3>登录后查看你的发布</h3><p>发布闲置、编辑信息，或标记物品已出。</p><button className="button button-primary" onClick={() => setAuthOpen(true)}>登录 / 注册 <ArrowRight size={16} /></button></div>
-            ) : myListings.length === 0 ? (
-              <div className="empty-market manage-empty"><h3>你还没有发布商品</h3><p>点击右上角“发布闲置”开始发布。</p></div>
             ) : (
-              <div className="manage-list">
-                {myListings.map((item) => <ManageRow key={item.id} item={item} onEdit={() => { setEditingListing(item); setListingOpen(true) }} onStatus={(status) => changeStatus(item, status)} onDelete={() => removeListing(item)} onOpen={() => setSelectedListing(item)} />)}
-              </div>
+              <>
+                {myListings.length === 0 ? (
+                  <div className="empty-market manage-empty"><h3>你还没有发布商品</h3><p>点击右上角“发布闲置”开始发布。</p></div>
+                ) : (
+                  <div className="manage-list">
+                    {myListings.map((item) => <ManageRow key={item.id} item={item} onEdit={() => { setEditingListing(item); setListingOpen(true) }} onStatus={(status) => changeStatus(item, status)} onDelete={() => removeListing(item)} onOpen={() => setSelectedListing(item)} />)}
+                  </div>
+                )}
+                <div className="manage-subsection">
+                  <div className="manage-subheading">
+                    <div><h2>我的说明书</h2><p>整理常用说明、图纸和文档链接。</p></div>
+                    <button className="button button-outline" onClick={openManualCreate}>新增说明书</button>
+                  </div>
+                  {myManuals.length === 0 ? (
+                    <div className="empty-market manage-empty"><h3>还没有说明书</h3><p>添加后，车友可以直接点开查看。</p></div>
+                  ) : (
+                    <div className="manual-grid manage-manuals">
+                      {myManuals.map((manual) => <ManualCard key={manual.id} item={manual} allowManage onEdit={() => { setEditingManual(manual); setManualOpen(true) }} onDelete={() => removeManual(manual)} />)}
+                    </div>
+                  )}
+                </div>
+              </>
             )}
             {session && <button className="manage-signout" onClick={signOut}><LogOut size={15} />退出登录</button>}
           </section>
@@ -551,6 +652,12 @@ function App() {
         busy={busy}
         onClose={() => { setListingOpen(false); setEditingListing(null) }}
         onSave={saveListing}
+      />}
+      {manualOpen && <ManualModal
+        manual={editingManual}
+        busy={busy}
+        onClose={() => { setManualOpen(false); setEditingManual(null) }}
+        onSave={saveManual}
       />}
       {profileOpen && <ProfileModal profile={profile} busy={busy} onClose={() => setProfileOpen(false)} onSave={saveProfile} />}
       {selectedListing && <ListingDetail
@@ -694,6 +801,79 @@ function AuthModal({ onClose, onSuccess }) {
       </form>
       <p className="auth-switch">{mode === 'login' ? '还没有账号？' : '已经有账号了？'}<button onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError('') }}>{mode === 'login' ? '立即注册' : '去登录'}</button></p>
       <div className="auth-privacy"><ShieldCheck size={14} />昵称用于登录且不能重复；请记住密码，暂不支持邮箱找回。</div>
+    </ModalFrame>
+  )
+}
+
+function ManualCard({ item, allowManage = false, onEdit, onDelete }) {
+  const openLink = () => window.open(item.manual_url, '_blank', 'noopener,noreferrer')
+  return (
+    <article className="manual-card">
+      <button className="manual-cover" onClick={openLink} aria-label={`打开说明书：${item.title}`}>
+        <img src={item.cover_url || 'https://images.unsplash.com/photo-1516939884455-1445c8652f83?auto=format&fit=crop&w=800&q=80'} alt={item.title} loading="lazy" />
+      </button>
+      <div className="manual-body">
+        <div className="manual-meta"><span className="manual-tag">说明书</span><time>{formatDate(item.created_at)}</time></div>
+        <h3>{item.title}</h3>
+        <button className="manual-open" onClick={openLink}>打开查看 <ArrowRight size={14} /></button>
+        {allowManage && (
+          <div className="manual-actions">
+            <button className="button button-outline" onClick={onEdit}>编辑</button>
+            <button className="button button-outline delete-control" onClick={onDelete}>删除</button>
+          </div>
+        )}
+      </div>
+    </article>
+  )
+}
+
+function ManualModal({ manual, busy, onClose, onSave }) {
+  const [title, setTitle] = useState(manual?.title ?? '')
+  const [coverUrl, setCoverUrl] = useState(manual?.cover_url ?? '')
+  const [manualUrl, setManualUrl] = useState(manual?.manual_url ?? '')
+  const [error, setError] = useState('')
+
+  const submit = (event) => {
+    event.preventDefault()
+    const normalizedTitle = title.trim()
+    const normalizedCover = coverUrl.trim()
+    const normalizedManual = manualUrl.trim()
+    if (!normalizedTitle || !normalizedManual) {
+      setError('标题和链接不能为空。')
+      return
+    }
+    try {
+      const parsedManual = new URL(normalizedManual)
+      if (!['http:', 'https:'].includes(parsedManual.protocol)) throw new Error()
+    } catch {
+      setError('说明书链接格式不正确，请填写 http:// 或 https:// 开头的完整链接。')
+      return
+    }
+    if (normalizedCover) {
+      try {
+        const parsedCover = new URL(normalizedCover)
+        if (!['http:', 'https:'].includes(parsedCover.protocol)) throw new Error()
+      } catch {
+        setError('封面图链接格式不正确，请填写 http:// 或 https:// 开头的完整链接。')
+        return
+      }
+    }
+    onSave({ title: normalizedTitle, cover_url: normalizedCover || null, manual_url: normalizedManual })
+  }
+
+  return (
+    <ModalFrame onClose={onClose} size="listing-modal">
+      <div className="modal-topline"><span>RC MANUALS</span><button onClick={onClose} aria-label="关闭"><X size={19} /></button></div>
+      <div className="modal-kicker">SHARE A GUIDE</div>
+      <h2>{manual ? '编辑说明书' : '分享说明书'}</h2>
+      <p className="modal-subtitle">填写标题、封面图和文档链接，车友可直接点击查看。</p>
+      <form className="form-stack listing-form" onSubmit={submit}>
+        <label>标题<input required maxLength="80" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="例如：SCX10 III 组装说明书" /></label>
+        <label>封面图链接 <span className="optional-label">选填</span><input type="url" maxLength="1000" value={coverUrl} onChange={(event) => setCoverUrl(event.target.value)} placeholder="https://example.com/cover.jpg" /></label>
+        <label>说明书链接<input required type="url" maxLength="1000" value={manualUrl} onChange={(event) => setManualUrl(event.target.value)} placeholder="https://example.com/manual.pdf" /></label>
+        {error && <p className="form-error">{error}</p>}
+        <button className="button button-primary full-button" type="submit" disabled={busy}>{busy ? '正在保存…' : (manual ? '保存说明书' : '发布说明书')}<ArrowRight size={16} /></button>
+      </form>
     </ModalFrame>
   )
 }

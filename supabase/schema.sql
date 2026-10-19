@@ -28,6 +28,16 @@ create table if not exists public.listings (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.manuals (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  title text not null check (char_length(title) between 1 and 80),
+  cover_url text,
+  manual_url text not null check (char_length(manual_url) between 1 and 2048),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 alter table public.profiles add column if not exists avatar_url text;
 alter table public.listings add column if not exists seller_avatar_url text;
 alter table public.listings add column if not exists xianyu_url text;
@@ -163,6 +173,11 @@ create trigger listings_set_updated_at
 before update on public.listings
 for each row execute function public.set_updated_at();
 
+drop trigger if exists manuals_set_updated_at on public.manuals;
+create trigger manuals_set_updated_at
+before update on public.manuals
+for each row execute function public.set_updated_at();
+
 create or replace function public.create_profile_for_new_user()
 returns trigger
 language plpgsql
@@ -193,6 +208,7 @@ for each row execute function public.create_profile_for_new_user();
 
 alter table public.profiles enable row level security;
 alter table public.listings enable row level security;
+alter table public.manuals enable row level security;
 
 drop policy if exists "Users can read their own profile" on public.profiles;
 create policy "Users can read their own profile"
@@ -235,6 +251,31 @@ with check ((select auth.uid()) = user_id);
 drop policy if exists "Users can delete their own listings" on public.listings;
 create policy "Users can delete their own listings"
 on public.listings for delete
+to authenticated
+using ((select auth.uid()) = user_id);
+
+drop policy if exists "Anyone can view manuals" on public.manuals;
+create policy "Anyone can view manuals"
+on public.manuals for select
+to anon, authenticated
+using (true);
+
+drop policy if exists "Users can create their own manuals" on public.manuals;
+create policy "Users can create their own manuals"
+on public.manuals for insert
+to authenticated
+with check ((select auth.uid()) = user_id);
+
+drop policy if exists "Users can update their own manuals" on public.manuals;
+create policy "Users can update their own manuals"
+on public.manuals for update
+to authenticated
+using ((select auth.uid()) = user_id)
+with check ((select auth.uid()) = user_id);
+
+drop policy if exists "Users can delete their own manuals" on public.manuals;
+create policy "Users can delete their own manuals"
+on public.manuals for delete
 to authenticated
 using ((select auth.uid()) = user_id);
 
