@@ -10,8 +10,9 @@
 4. 在 Supabase Dashboard 的 SQL Editor 中运行 [`supabase/schema.sql`](./supabase/schema.sql)。如果数据库已创建，重新执行此脚本会迁移原有群名字段、添加注册频率限制、说明书资料表，以及头像和闲鱼链接所需字段与 Storage 策略。
 5. 若只需增加“靓图欣赏”，运行增量脚本 [`supabase/rc_gallery.sql`](./supabase/rc_gallery.sql)，不会改动现有账号、商品或说明书数据。
 6. 将提供的车型说明书目录导入数据库时，在 Supabase SQL Editor 中运行 [`supabase/import_manual_catalog.sql`](./supabase/import_manual_catalog.sql)。这些记录为公共只读资料，不归属个人账号；脚本可重复执行，不会按相同 PDF 链接重复插入。
-7. 安装 Supabase CLI 并关联项目，然后部署昵称注册 Edge Function：`supabase functions deploy register-nickname --project-ref ygklgnablhnitcsptqor`。
-8. 启动开发服务器：`npm run dev`
+7. 若只需启用说明书链接反馈，在 Supabase SQL Editor 中运行 [`supabase/manual_link_reports.sql`](./supabase/manual_link_reports.sql)。登录用户可对每条说明书标记一次“无法打开”，所有访客可看到累计反馈数。
+8. 安装 Supabase CLI 并关联项目，然后部署昵称注册 Edge Function：`supabase functions deploy register-nickname --project-ref ygklgnablhnitcsptqor`。
+9. 启动开发服务器：`npm run dev`
 
 当前项目目录已包含本地 `.env.local` 配置；该文件已加入 `.gitignore`。
 
@@ -33,6 +34,7 @@
 - 所在群支持多选，可从常用群列表选择或输入其他群名；商品详情会展示卖家所在的全部群聊。
 - 发布时自动带入个人资料中的微信号和所在群；发布、编辑、删除自己的闲置，或设置售卖中 / 已售 / 下架状态；下架商品会从公开集市隐藏。
 - 说明书共享区支持添加“标题 + 封面图 + 链接”，封面可上传并裁剪为 300 × 200 JPEG；卡片展示，并在新窗口中打开说明书链接。
+- 登录用户可以将无法访问的说明书链接标记一次，卡片展示反馈累计数，方便维护者排查失效或超时链接。
 - 靓图欣赏独立页面展示 RC 美照；每位用户最多上传 10 张，照片会按现有压缩逻辑缩放至 1920 × 1080 边界内并保存为 JPEG，用户可以删除自己的照片。
 - 每条发布最多上传 5 张图片；浏览器逐张压缩为 JPEG，最长边不超过 1920×1080 范围，质量约 80%，再上传到 Supabase Storage。
 - 个人资料支持拖动、缩放裁剪头像，保存为 200 × 200 JPEG 并上传到独立的公开头像桶；头像只允许本人上传、更新和删除。

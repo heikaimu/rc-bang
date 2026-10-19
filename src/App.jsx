@@ -207,6 +207,8 @@ function App() {
   const [profile, setProfile] = useState(EMPTY_PROFILE)
   const [listings, setListings] = useState([])
   const [manuals, setManuals] = useState([])
+  const [manualReports, setManualReports] = useState({})
+  const [manualReportError, setManualReportError] = useState('')
   const [galleryPhotos, setGalleryPhotos] = useState([])
   const [galleryLoading, setGalleryLoading] = useState(false)
   const [galleryError, setGalleryError] = useState('')
@@ -260,6 +262,23 @@ function App() {
     setManuals(data ?? [])
   }, [])
 
+  const loadManualReports = useCallback(async () => {
+    if (!supabase) {
+      setManualReports({})
+      return
+    }
+    const { data, error } = await supabase.rpc('get_manual_link_report_summary')
+    if (error) {
+      setManualReportError(`无法读取链接反馈：${error.message}`)
+      return
+    }
+    setManualReportError('')
+    setManualReports(Object.fromEntries((data ?? []).map((row) => [row.manual_id, {
+      count: Number(row.report_count),
+      reportedByMe: row.reported_by_me,
+    }])))
+  }, [])
+
   const loadGalleryPhotos = useCallback(async () => {
     if (!supabase) {
       setGalleryPhotos([])
@@ -310,16 +329,20 @@ function App() {
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
       setSession(currentSession)
-      window.setTimeout(() => loadProfile(currentSession?.user), 0)
+      window.setTimeout(() => {
+        loadProfile(currentSession?.user)
+        loadManualReports()
+      }, 0)
     })
     loadListings()
     loadManuals()
+    loadManualReports()
     loadGalleryPhotos()
     return () => {
       active = false
       subscription.unsubscribe()
     }
-  }, [loadListings, loadManuals, loadGalleryPhotos, loadProfile])
+  }, [loadListings, loadManuals, loadManualReports, loadGalleryPhotos, loadProfile])
 
   const visibleListings = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase()
@@ -483,6 +506,30 @@ function App() {
     } catch (error) {
       notify(`删除说明书失败：${error.message}`, 'error')
     }
+  }
+
+  const reportManualUnavailable = async (manual) => {
+    if (!session) {
+      setAuthOpen(true)
+      return
+    }
+    const existing = manualReports[manual.id]
+    if (existing?.reportedByMe) return
+    const { error } = await supabase.from('manual_link_reports').insert({
+      manual_id: manual.id,
+      user_id: session.user.id,
+    })
+    if (error) {
+      if (error.code === '23505') {
+        notify('你已经标记过这条说明书。', 'error')
+        await loadManualReports()
+        return
+      }
+      notify(`标记失败：${error.message}`, 'error')
+      return
+    }
+    await loadManualReports()
+    notify('已记录链接无法打开的反馈，谢谢提醒。')
   }
 
   const uploadGalleryPhotos = async (event) => {
@@ -738,6 +785,7 @@ function App() {
               </div>
               <button className="button button-outline" onClick={openManualCreate}>发布说明书</button>
             </div>
+            {manualReportError && <div className="manual-report-notice">{manualReportError} 请在 Supabase 执行 <code>supabase/manual_link_reports.sql</code> 后启用链接标记。</div>}
             {manuals.length === 0 ? (
               <div className="empty-market manual-empty">
                 <h3>还没有说明书资料</h3>
@@ -751,6 +799,10 @@ function App() {
                   allowManage={manual.user_id === session?.user?.id}
                   onEdit={() => { setEditingManual(manual); setManualOpen(true) }}
                   onDelete={() => removeManual(manual)}
+                  reportCount={manualReports[manual.id]?.count ?? 0}
+                  reportedByMe={manualReports[manual.id]?.reportedByMe ?? false}
+                  signedIn={Boolean(session)}
+                  onReport={() => reportManualUnavailable(manual)}
                 />)}
               </div>
             )}
@@ -970,7 +1022,7 @@ function AuthModal({ onClose, onSuccess }) {
   )
 }
 
-function ManualCard({ item, allowManage = false, onEdit, onDelete }) {
+function ManualCard({ item, allowManage = false, onEdit, onDelete, reportCount = 0, reportedByMe = false, signedIn = false, onReport }) {
   const openLink = () => window.open(item.manual_url, '_blank', 'noopener,noreferrer')
   return (
     <article className="manual-card">
@@ -981,6 +1033,14 @@ function ManualCard({ item, allowManage = false, onEdit, onDelete }) {
         <div className="manual-meta"><span className="manual-tag">说明书</span><time>{formatDate(item.created_at)}</time></div>
         <h3>{item.title}</h3>
         <button className="manual-open" onClick={openLink}>打开查看 <ArrowRight size={14} /></button>
+        <button
+          className={`manual-report${reportedByMe ? ' is-reported' : ''}`}
+          onClick={onReport}
+          disabled={reportedByMe}
+          title={reportedByMe ? '你已标记此链接无法打开' : '仅登录用户可标记，每个账号限标记一次'}
+        >
+          <X size={13} />{reportedByMe ? '你已标记无法打开' : signedIn ? '无法打开？标记' : '登录后标记无法打开'}<span>{reportCount}</span>
+        </button>
         {allowManage && (
           <div className="manual-actions">
             <button className="button button-outline" onClick={onEdit}>编辑</button>
