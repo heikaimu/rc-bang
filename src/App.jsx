@@ -795,6 +795,7 @@ function ProfileModal({ profile, busy, onClose, onSave }) {
 function ListingDetail({ item, viewerGroups, viewerId, onClose, onContact }) {
   const [imageIndex, setImageIndex] = useState(0)
   const [zoomed, setZoomed] = useState(false)
+  const touchStartX = useRef(null)
   const groupMatch = getGroupMatch(item, viewerGroups, viewerId)
   const copyContact = async () => {
     try {
@@ -810,14 +811,39 @@ function ListingDetail({ item, viewerGroups, viewerId, onClose, onContact }) {
     <ModalFrame onClose={onClose} size="detail-modal">
       <div className="detail-layout">
         <div className="detail-gallery">
-          {photos[imageIndex]
-            ? <button className="detail-image-open" onClick={() => setZoomed(true)} aria-label="点击查看商品大图">
-                <img className="detail-main-image" src={photos[imageIndex]} alt={item.title} />
-              </button>
-            : <div className="image-placeholder detail-placeholder"><span>RC</span></div>}
-          <button className="gallery-close" onClick={onClose} aria-label="关闭"><X size={19} /></button>
-          {photos.length > 1 && <><button className="gallery-arrow gallery-prev" onClick={() => changeImage(-1)} aria-label="上一张"><ArrowLeft size={17} /></button><button className="gallery-arrow gallery-next" onClick={() => changeImage(1)} aria-label="下一张"><ArrowRight size={17} /></button><div className="gallery-dots">{photos.map((_, index) => <button key={index} className={index === imageIndex ? 'gallery-dot active' : 'gallery-dot'} onClick={() => setImageIndex(index)} aria-label={`第 ${index + 1} 张`} />)}</div></>}
-          <span className="detail-photo-count">{String(imageIndex + 1).padStart(2, '0')} / {String(photos.length || 1).padStart(2, '0')}</span>
+          <div
+            className="detail-image-stage"
+            onTouchStart={(event) => { touchStartX.current = event.changedTouches[0]?.clientX ?? null }}
+            onTouchEnd={(event) => {
+              if (touchStartX.current === null) return
+              const delta = event.changedTouches[0].clientX - touchStartX.current
+              touchStartX.current = null
+              if (Math.abs(delta) > 40 && photos.length > 1) changeImage(delta < 0 ? 1 : -1)
+            }}
+          >
+            {photos[imageIndex]
+              ? <button className="detail-image-open" onClick={() => setZoomed(true)} aria-label="点击查看商品大图">
+                  <img className="detail-main-image" src={photos[imageIndex]} alt={`${item.title}，第 ${imageIndex + 1} 张`} />
+                </button>
+              : <div className="image-placeholder detail-placeholder"><span>RC</span></div>}
+            <button className="gallery-close" onClick={onClose} aria-label="关闭"><X size={19} /></button>
+            {photos.length > 1 && <>
+              <button className="gallery-arrow gallery-prev" onClick={() => changeImage(-1)} aria-label="上一张"><ArrowLeft size={17} /></button>
+              <button className="gallery-arrow gallery-next" onClick={() => changeImage(1)} aria-label="下一张"><ArrowRight size={17} /></button>
+              <span className="detail-photo-count">{String(imageIndex + 1).padStart(2, '0')} / {String(photos.length).padStart(2, '0')}</span>
+            </>}
+          </div>
+          {photos.length > 1 && <div className="detail-thumbnails" aria-label="商品图片缩略图">
+            {photos.map((photo, index) => <button
+              key={`${photo}-${index}`}
+              className={`detail-thumbnail${index === imageIndex ? ' active' : ''}`}
+              onClick={() => setImageIndex(index)}
+              aria-label={`查看第 ${index + 1} 张图片`}
+              aria-current={index === imageIndex ? 'true' : undefined}
+            >
+              <img src={photo} alt="" loading="lazy" />
+            </button>)}
+          </div>}
         </div>
         <div className="detail-copy">
           <div className="modal-topline"><span>{item.category} · 发布于 {formatDate(item.created_at)}</span><span className={`detail-status detail-${item.status || 'available'}`}><i />{listingStatusLabel(item.status)}</span></div>
