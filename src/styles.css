@@ -128,11 +128,10 @@ button { cursor: pointer; }
 .gallery-upload.is-uploading { cursor: wait; }
 .gallery-upload input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .gallery-upload input:disabled { cursor: wait; }
-.gallery-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; padding: 8px 0 14px; }
-.gallery-card { min-width: 0; background: #fff; border: 1px solid #e8e9e3; }
-.gallery-image { display: block; width: 100%; aspect-ratio: 4 / 3; background: #edf0e6; overflow: hidden; }
-.gallery-image img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .25s; }
-.gallery-image:hover img { transform: scale(1.025); }
+.gallery-grid { columns: 3; column-gap: 18px; padding: 8px 0 14px; }
+.gallery-card { display: inline-block; width: 100%; margin: 0 0 18px; break-inside: avoid; background: #fff; border: 1px solid #e8e9e3; }
+.gallery-image { display: block; width: 100%; background: #edf0e6; overflow: hidden; }
+.gallery-image img { display: block; width: 100%; height: auto; object-fit: contain; transition: transform .25s; }
 .gallery-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 42px; padding: 7px 11px; color: #8c8e87; font: 9px var(--mono); }
 .gallery-delete { display: inline-flex; align-items: center; gap: 5px; padding: 5px 7px; border: 0; background: transparent; color: #9b5747; font: 10px 'Noto Sans SC', sans-serif; }
 .gallery-delete:hover { background: #fbf0ec; }
@@ -289,7 +288,7 @@ button { cursor: pointer; }
   .site-header { padding-left: 5vw; padding-right: 5vw; }.hero, .benefit-strip, .market-section, .manage-section, .manuals-page, .gallery-page, .site-footer { margin-left: 5vw; margin-right: 5vw; }
 }
 @media (max-width: 900px) {
-  .site-header { height: 70px; gap: 27px; }.brand-caption, .community-pill, .sign-out { display: none; }.header-actions { gap: 12px; }.hero { min-height: 392px; padding: 54px 0; grid-template-columns: 1fr 1fr; }.hero h1 { font-size: 42px; }.hero-art { height: 255px; }.benefit-strip { gap: 20px; }.benefit-item { min-width: 140px; }.benefit-item small { font-size: 9px; }.listing-grid, .manual-grid { grid-template-columns: repeat(3, 1fr); }.gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }.card-image { height: 185px; }.manage-row { gap: 13px; }.manage-price { width: 78px; }.manage-controls { gap: 4px; }.manage-controls button { padding: 0 6px; }
+  .site-header { height: 70px; gap: 27px; }.brand-caption, .community-pill, .sign-out { display: none; }.header-actions { gap: 12px; }.hero { min-height: 392px; padding: 54px 0; grid-template-columns: 1fr 1fr; }.hero h1 { font-size: 42px; }.hero-art { height: 255px; }.benefit-strip { gap: 20px; }.benefit-item { min-width: 140px; }.benefit-item small { font-size: 9px; }.listing-grid, .manual-grid { grid-template-columns: repeat(3, 1fr); }.gallery-grid { columns: 2; column-gap: 12px; }.gallery-card { margin-bottom: 12px; }.card-image { height: 185px; }.manage-row { gap: 13px; }.manage-price { width: 78px; }.manage-controls { gap: 4px; }.manage-controls button { padding: 0 6px; }
 }
 @media (max-width: 650px) {
   body { min-width: 360px; }.site-header { height: 62px; padding: 0 16px; gap: 18px; }.brand { gap: 7px; }.brand-mark { transform: scale(.85); transform-origin: left center; width: 25px; }.brand-name { font-size: 14px; }.main-nav { gap: 15px; }.nav-link { font-size: 11px; }.header-actions { gap: 9px; }.user-chip-name, .sign-in-link { display: none; }.avatar { width: 26px; height: 26px; }.header-publish { min-height: 33px; font-size: 10px; padding: 0 9px; gap: 5px; }.header-publish svg { width: 14px; }
@@ -326,7 +325,8 @@ button { cursor: pointer; }
   .gallery-upload-area { flex-direction: column; align-items: flex-end; gap: 5px; }
   .gallery-upload { min-height: 35px; padding: 0 9px; font-size: 9px; gap: 5px; white-space: nowrap; }
   .gallery-limit { font-size: 8px; }
-  .gallery-grid { gap: 9px; }
+  .gallery-grid { column-gap: 9px; }
+  .gallery-card { margin-bottom: 9px; }
   .gallery-card-footer { min-height: 36px; padding: 5px 7px; font-size: 8px; }
   .gallery-delete { font-size: 9px; }
   .manual-cover { height: auto; aspect-ratio: 1.28; }
