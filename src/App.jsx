@@ -868,7 +868,7 @@ function ManualModal({ manual, busy, onClose, onSave }) {
   useEffect(() => {
     if (!coverSource || !coverImageRef.current) return undefined
     const cropper = new Cropper(coverImageRef.current, {
-      aspectRatio: 1,
+      aspectRatio: 3 / 2,
       viewMode: 1,
       autoCropArea: 1,
       background: false,
@@ -926,7 +926,7 @@ function ManualModal({ manual, busy, onClose, onSave }) {
       let coverBlob = null
       if (coverSource) {
         const canvas = cropperRef.current?.getCroppedCanvas({
-          width: 200,
+          width: 300,
           height: 200,
           fillColor: '#ffffff',
           imageSmoothingEnabled: true,
@@ -954,7 +954,7 @@ function ManualModal({ manual, busy, onClose, onSave }) {
       <div className="modal-topline"><span>RC MANUALS</span><button onClick={onClose} aria-label="关闭"><X size={19} /></button></div>
       <div className="modal-kicker">SHARE A GUIDE</div>
       <h2>{manual ? '编辑说明书' : '分享说明书'}</h2>
-      <p className="modal-subtitle">上传方形封面，拖动调整裁剪范围，保存为 200 × 200 JPEG。</p>
+      <p className="modal-subtitle">拖动调整封面裁剪范围，保存为 300 × 200 JPEG。</p>
       <form className="form-stack listing-form" onSubmit={submit}>
         <label>标题<input required maxLength="80" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="例如：SCX10 III 组装说明书" /></label>
         <div className="manual-cover-field">
