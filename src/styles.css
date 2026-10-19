@@ -127,9 +127,9 @@ button { cursor: pointer; }
 .sold-ribbon { position: absolute; right: 11px; top: 12px; background: #2b2c28; color: #fff; font-size: 9px; padding: 5px 8px; }
 .listing-card.is-sold .card-image img { filter: grayscale(.6); opacity: .74; }
 .card-body { padding: 14px 13px 12px; }
-.card-title-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 7px; }
-.card-title-row h3 { font-size: 13px; line-height: 1.5; margin: 0; font-weight: 700; }
-.card-price { white-space: nowrap; font: 500 13px var(--mono); color: #292a26; }
+.card-title-row { display: block; min-width: 0; }
+.card-title-row h3 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; line-height: 1.5; margin: 0; font-weight: 700; }
+.card-price { display: block; margin-top: 4px; white-space: nowrap; font: 500 13px var(--mono); color: #292a26; }
 .card-description { margin: 7px 0 13px; color: #82847d; font-size: 10px; line-height: 1.7; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .card-meta { display: flex; gap: 6px; align-items: center; min-width: 0; font-size: 9px; color: #8c8e87; border-top: 1px solid #f0f0ed; padding-top: 10px; }
 .card-meta .seller-avatar { width: 22px; height: 22px; flex: 0 0 22px; font-size: 9px; }

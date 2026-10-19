@@ -581,7 +581,10 @@ function ListingCard({ item, viewerGroups, viewerId, onClick }) {
         <span className="card-open"><ArrowRight size={17} /></span>
       </div>
       <div className="card-body">
-        <div className="card-title-row"><h3>{item.title}</h3><span className="card-price">¥{Number(item.price).toLocaleString()}</span></div>
+        <div className="card-title-row">
+          <h3 title={item.title}>{item.title}</h3>
+          <span className="card-price">¥{Number(item.price).toLocaleString()}</span>
+        </div>
         <p className="card-description">{item.description}</p>
         <div className="card-meta">
           {item.seller_avatar_url
