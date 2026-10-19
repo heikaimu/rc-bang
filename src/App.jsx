@@ -207,6 +207,8 @@ function App() {
   const [profile, setProfile] = useState(EMPTY_PROFILE)
   const [listings, setListings] = useState([])
   const [manuals, setManuals] = useState([])
+  const [isManualAdmin, setIsManualAdmin] = useState(false)
+  const [manualAdminError, setManualAdminError] = useState('')
   const [manualReports, setManualReports] = useState({})
   const [manualReportError, setManualReportError] = useState('')
   const [galleryPhotos, setGalleryPhotos] = useState([])
@@ -279,6 +281,22 @@ function App() {
     }])))
   }, [])
 
+  const loadManualAdminStatus = useCallback(async (user) => {
+    if (!supabase || !user) {
+      setIsManualAdmin(false)
+      setManualAdminError('')
+      return
+    }
+    const { data, error } = await supabase.rpc('is_rc_manual_admin')
+    if (error) {
+      setIsManualAdmin(false)
+      setManualAdminError(`无法确认说明书管理员权限：${error.message}`)
+      return
+    }
+    setManualAdminError('')
+    setIsManualAdmin(Boolean(data))
+  }, [])
+
   const loadGalleryPhotos = useCallback(async () => {
     if (!supabase) {
       setGalleryPhotos([])
@@ -326,11 +344,13 @@ function App() {
       if (!active) return
       setSession(currentSession)
       loadProfile(currentSession?.user)
+      loadManualAdminStatus(currentSession?.user)
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
       setSession(currentSession)
       window.setTimeout(() => {
         loadProfile(currentSession?.user)
+        loadManualAdminStatus(currentSession?.user)
         loadManualReports()
       }, 0)
     })
@@ -342,7 +362,7 @@ function App() {
       active = false
       subscription.unsubscribe()
     }
-  }, [loadListings, loadManuals, loadManualReports, loadGalleryPhotos, loadProfile])
+  }, [loadListings, loadManuals, loadManualReports, loadManualAdminStatus, loadGalleryPhotos, loadProfile])
 
   const visibleListings = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase()
@@ -367,6 +387,10 @@ function App() {
   const openManualCreate = () => {
     if (!session) {
       setAuthOpen(true)
+      return
+    }
+    if (!isManualAdmin) {
+      notify('只有 MH 管理员可以新增或编辑说明书。', 'error')
       return
     }
     setEditingManual(null)
@@ -438,7 +462,7 @@ function App() {
   }
 
   const saveManual = async (manual) => {
-    if (!supabase || !session) return
+    if (!supabase || !session || !isManualAdmin) return
     let uploadedCoverPath = null
     let previousCoverPath = null
     let manualSaved = false
@@ -473,7 +497,7 @@ function App() {
         user_id: session.user.id,
       }
       const result = editingManual
-        ? await supabase.from('manuals').update(payload).eq('id', editingManual.id).eq('user_id', session.user.id)
+        ? await supabase.from('manuals').update(payload).eq('id', editingManual.id)
         : await supabase.from('manuals').insert(payload)
       if (result.error) throw result.error
       manualSaved = true
@@ -497,9 +521,13 @@ function App() {
   }
 
   const removeManual = async (manual) => {
+    if (!isManualAdmin) {
+      notify('只有 MH 管理员可以删除说明书。', 'error')
+      return
+    }
     if (!window.confirm('确定删除这份说明书吗？')) return
     try {
-      const { error } = await supabase.from('manuals').delete().eq('id', manual.id).eq('user_id', session.user.id)
+      const { error } = await supabase.from('manuals').delete().eq('id', manual.id)
       if (error) throw error
       setManuals((current) => current.filter((item) => item.id !== manual.id))
       notify('说明书已删除')
@@ -783,8 +811,9 @@ function App() {
                 <h1>说明书共享</h1>
                 <p>整理常用说明、图纸和文档，方便车友随时查阅。</p>
               </div>
-              <button className="button button-outline" onClick={openManualCreate}>发布说明书</button>
+              {isManualAdmin && <button className="button button-outline" onClick={openManualCreate}>发布说明书</button>}
             </div>
+            {session && manualAdminError && <div className="manual-report-notice">{manualAdminError} 请在 Supabase 执行 <code>supabase/manual_admin.sql</code>。</div>}
             {manualReportError && <div className="manual-report-notice">{manualReportError} 请在 Supabase 执行 <code>supabase/manual_link_reports.sql</code> 后启用链接标记。</div>}
             {manuals.length === 0 ? (
               <div className="empty-market manual-empty">
@@ -796,7 +825,7 @@ function App() {
                 {manuals.map((manual) => <ManualCard
                   key={manual.id}
                   item={manual}
-                  allowManage={manual.user_id === session?.user?.id}
+                  allowManage={isManualAdmin}
                   onEdit={() => { setEditingManual(manual); setManualOpen(true) }}
                   onDelete={() => removeManual(manual)}
                   reportCount={manualReports[manual.id]?.count ?? 0}
