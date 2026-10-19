@@ -525,7 +525,6 @@ function App() {
   }
 
   const myListings = listings.filter((item) => item.user_id === session?.user?.id)
-  const myManuals = manuals.filter((item) => item.user_id === session?.user?.id)
 
   return (
     <div className="app-shell">
@@ -536,7 +535,7 @@ function App() {
         </a>
         <nav className="main-nav" aria-label="主导航">
           <button className={page === 'market' ? 'nav-link active' : 'nav-link'} onClick={() => setPage('market')}>逛集市</button>
-          <button className={page === 'manage' ? 'nav-link active' : 'nav-link'} onClick={() => { setPage('manage'); if (!session) setAuthOpen(true) }}>我的发布</button>
+          <button className={page === 'manuals' ? 'nav-link active' : 'nav-link'} onClick={() => setPage('manuals')}>说明书</button>
         </nav>
         <div className="header-actions">
           {session ? (
@@ -566,25 +565,6 @@ function App() {
                 </div>
                 <label className="search-box"><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜一搜车、配件或关键词" /><span className="search-shortcut"><SlidersHorizontal size={13} /></span></label>
               </div>
-              <div className="manuals-section">
-                <div className="manuals-heading">
-                  <div>
-                    <span className="section-kicker">RC MANUALS</span>
-                    <h2>说明书共享</h2>
-                  </div>
-                  {session && <button className="button button-outline" onClick={openManualCreate}>发布说明书</button>}
-                </div>
-                {manuals.length === 0 ? (
-                  <div className="empty-market manual-empty">
-                    <h3>还没有说明书资料</h3>
-                    <p>上传常用的装车、调参、保养说明，方便车友直接查阅。</p>
-                  </div>
-                ) : (
-                  <div className="manual-grid">
-                    {manuals.map((manual) => <ManualCard key={manual.id} item={manual} onEdit={() => { setEditingManual(manual); setManualOpen(true) }} onDelete={() => removeManual(manual)} />)}
-                  </div>
-                )}
-              </div>
               {!configured ? (
                 <div className="setup-message"><Settings2 size={20} /><div><b>还差一步就能开张啦</b><p>请先配置 Supabase 环境变量，并在项目数据库中运行 <code>supabase/schema.sql</code>。</p></div></div>
               ) : loading ? (
@@ -606,7 +586,7 @@ function App() {
                 </div>
               )}
           </section>
-        ) : (
+        ) : page === 'manage' ? (
           <section className="manage-section">
             <div className="manage-heading">
               <div><h1>我的发布<span className="heading-count">{myListings.length.toString().padStart(2, '0')}</span></h1><p>管理你发布的商品。</p></div>
@@ -623,22 +603,36 @@ function App() {
                     {myListings.map((item) => <ManageRow key={item.id} item={item} onEdit={() => { setEditingListing(item); setListingOpen(true) }} onStatus={(status) => changeStatus(item, status)} onDelete={() => removeListing(item)} onOpen={() => setSelectedListing(item)} />)}
                   </div>
                 )}
-                <div className="manage-subsection">
-                  <div className="manage-subheading">
-                    <div><h2>我的说明书</h2><p>整理常用说明、图纸和文档链接。</p></div>
-                    <button className="button button-outline" onClick={openManualCreate}>新增说明书</button>
-                  </div>
-                  {myManuals.length === 0 ? (
-                    <div className="empty-market manage-empty"><h3>还没有说明书</h3><p>添加后，车友可以直接点开查看。</p></div>
-                  ) : (
-                    <div className="manual-grid manage-manuals">
-                      {myManuals.map((manual) => <ManualCard key={manual.id} item={manual} allowManage onEdit={() => { setEditingManual(manual); setManualOpen(true) }} onDelete={() => removeManual(manual)} />)}
-                    </div>
-                  )}
-                </div>
               </>
             )}
             {session && <button className="manage-signout" onClick={signOut}><LogOut size={15} />退出登录</button>}
+          </section>
+        ) : (
+          <section className="manuals-page">
+            <div className="manuals-heading">
+              <div>
+                <span className="section-kicker">RC MANUALS</span>
+                <h1>说明书共享</h1>
+                <p>整理常用说明、图纸和文档，方便车友随时查阅。</p>
+              </div>
+              <button className="button button-outline" onClick={openManualCreate}>发布说明书</button>
+            </div>
+            {manuals.length === 0 ? (
+              <div className="empty-market manual-empty">
+                <h3>还没有说明书资料</h3>
+                <p>分享装车、调参、保养说明或其他 RC 相关文档。</p>
+              </div>
+            ) : (
+              <div className="manual-grid">
+                {manuals.map((manual) => <ManualCard
+                  key={manual.id}
+                  item={manual}
+                  allowManage={manual.user_id === session?.user?.id}
+                  onEdit={() => { setEditingManual(manual); setManualOpen(true) }}
+                  onDelete={() => removeManual(manual)}
+                />)}
+              </div>
+            )}
           </section>
         )}
       </main>

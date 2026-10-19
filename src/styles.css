@@ -112,11 +112,10 @@ button { cursor: pointer; }
 .search-box input::placeholder { color: #a1a39c; }
 .search-shortcut { display: grid; place-items: center; border-left: 1px solid #e3e4de; padding-left: 8px; }
 .listing-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; padding: 24px 0 11px; }
-.manuals-section { padding-top: 22px; }
+.manuals-page { max-width: 1240px; min-height: calc(100vh - 150px); margin: 0 auto; padding: 68px 0 48px; }
 .manuals-heading { display: flex; align-items: end; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
-.manuals-heading h2, .manage-subheading h2 { margin: 8px 0 0; font-size: 23px; letter-spacing: -.7px; }
-.manage-subheading { display: flex; align-items: end; justify-content: space-between; gap: 12px; margin: 22px 0 16px; }
-.manage-subheading p { color: #7d807b; margin: 6px 0 0; font-size: 11px; }
+.manuals-heading h1 { margin: 8px 0 0; font-size: 31px; letter-spacing: -.8px; }
+.manuals-heading p { color: #7d807b; margin: 8px 0 0; font-size: 11px; }
 .manual-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; padding: 8px 0 14px; }
 .manual-card { display: flex; flex-direction: column; background: #fff; border: 1px solid #e8e9e3; min-width: 0; transition: transform .2s, box-shadow .2s; }
 .manual-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(25,27,22,.07); }
@@ -129,7 +128,6 @@ button { cursor: pointer; }
 .manual-open { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: fit-content; background: transparent; border: 0; padding: 0; color: var(--orange); font-size: 10px; font-weight: 700; }
 .manual-actions { display: flex; gap: 8px; margin-top: 2px; }
 .manual-actions .button { min-height: 30px; font-size: 10px; padding: 0 10px; }
-.manage-manuals { padding-bottom: 4px; }
 .manual-empty { min-height: 220px; }
 .listing-card { text-align: left; background: #fff; border: 1px solid #e8e9e3; padding: 0; min-width: 0; transition: transform .2s, box-shadow .2s; }
 .listing-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(25,27,22,.07); }
@@ -267,7 +265,7 @@ button { cursor: pointer; }
 .toast { position: fixed; z-index: 20; bottom: 24px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 9px; background: #282925; color: #fff; padding: 12px 14px; box-shadow: 0 8px 25px rgba(0,0,0,.16); font-size: 11px; max-width: calc(100vw - 30px); animation: modal-in .2s; }.toast > span:first-child { color: #a9ce9c; display: grid; place-items: center; }.toast button { margin-left: 5px; background: transparent; border: 0; color: #b8bab3; padding: 0; display: grid; }.toast-error > span:first-child { color: #fa9c80; }
 
 @media (max-width: 1300px) {
-  .site-header { padding-left: 5vw; padding-right: 5vw; }.hero, .benefit-strip, .market-section, .manage-section, .site-footer { margin-left: 5vw; margin-right: 5vw; }
+  .site-header { padding-left: 5vw; padding-right: 5vw; }.hero, .benefit-strip, .market-section, .manage-section, .manuals-page, .site-footer { margin-left: 5vw; margin-right: 5vw; }
 }
 @media (max-width: 900px) {
   .site-header { height: 70px; gap: 27px; }.brand-caption, .community-pill, .sign-out { display: none; }.header-actions { gap: 12px; }.hero { min-height: 392px; padding: 54px 0; grid-template-columns: 1fr 1fr; }.hero h1 { font-size: 42px; }.hero-art { height: 255px; }.benefit-strip { gap: 20px; }.benefit-item { min-width: 140px; }.benefit-item small { font-size: 9px; }.listing-grid, .manual-grid { grid-template-columns: repeat(3, 1fr); }.card-image { height: 185px; }.manage-row { gap: 13px; }.manage-price { width: 78px; }.manage-controls { gap: 4px; }.manage-controls button { padding: 0 6px; }
@@ -296,6 +294,15 @@ button { cursor: pointer; }
 @media (max-width: 650px) {
   .site-header { gap: 16px; }
   .market-section { padding: 28px 0 42px; }
+  .manuals-page { padding: 38px 0 35px; min-height: calc(100vh - 124px); }
+  .manuals-heading { align-items: flex-start; }
+  .manuals-heading h1 { font-size: 25px; }
+  .manuals-heading p { max-width: 220px; line-height: 1.7; }
+  .manual-cover { height: auto; aspect-ratio: 1.28; }
+  .manual-body { gap: 8px; padding: 11px 9px 10px; }
+  .manual-body h3 { font-size: 11px; min-height: 33px; }
+  .manual-meta { font-size: 8px; }
+  .manual-open { font-size: 9px; }
   .section-heading h1 { font-size: 21px; }
   .section-heading p { font-size: 9px; }
   .market-toolbar { margin-top: 17px; }
