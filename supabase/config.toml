@@ -1,0 +1,2 @@
+[functions.register-nickname]
+verify_jwt = false
