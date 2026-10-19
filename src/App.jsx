@@ -323,7 +323,7 @@ function App() {
         seller_avatar_url: profile.avatar_url || '',
         wechat_id: accountProfile.wechat_id,
         group_names: accountProfile.group_names,
-        xianyu_url: form.xianyu_url,
+        xianyu_url: form.xianyu_url || null,
       }
       const result = editingListing
         ? await supabase.from('listings').update(payload).eq('id', editingListing.id).eq('user_id', session.user.id)
@@ -695,7 +695,7 @@ function ListingModal({ listing, busy, onClose, onSave }) {
         return
       }
     }
-    onSave({ title, description, price, category, images, xianyu_url: normalizedUrl })
+    onSave({ title, description, price, category, images, xianyu_url: normalizedUrl || null })
   }
 
   return (
