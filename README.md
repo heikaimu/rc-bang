@@ -7,7 +7,7 @@
 1. 安装 Node.js 18 或更高版本。
 2. 安装依赖：`npm install`
 3. 将 `.env.example` 复制为 `.env.local`，填写 Supabase Project URL 和 publishable key。
-4. 在 Supabase Dashboard 的 SQL Editor 中运行 [`supabase/schema.sql`](./supabase/schema.sql)。如果数据库已创建，重新执行此脚本会迁移原有群名字段、添加注册频率限制以及头像和闲鱼链接所需字段与 Storage 策略。
+4. 在 Supabase Dashboard 的 SQL Editor 中运行 [`supabase/schema.sql`](./supabase/schema.sql)。如果数据库已创建，重新执行此脚本会迁移原有群名字段、添加注册频率限制、说明书资料表，以及头像和闲鱼链接所需字段与 Storage 策略。
 5. 安装 Supabase CLI 并关联项目，然后部署昵称注册 Edge Function：`supabase functions deploy register-nickname --project-ref ygklgnablhnitcsptqor`。
 6. 启动开发服务器：`npm run dev`
 
@@ -30,6 +30,7 @@
 - 微信昵称 + 密码注册 / 登录、个人联系方式资料维护。
 - 所在群支持多选，可从常用群列表选择或输入其他群名；商品详情会展示卖家所在的全部群聊。
 - 发布时自动带入个人资料中的微信号和所在群；发布、编辑、删除自己的闲置，或设置售卖中 / 已售 / 下架状态；下架商品会从公开集市隐藏。
+- 说明书共享区支持添加“标题 + 封面图 + 链接”，卡片展示，并在新窗口中打开说明书链接。
 - 每条发布最多上传 5 张图片；浏览器逐张压缩为 JPEG，最长边不超过 1920×1080 范围，质量约 80%，再上传到 Supabase Storage。
 - 个人资料支持拖动、缩放裁剪头像，保存为 200 × 200 JPEG 并上传到独立的公开头像桶；头像只允许本人上传、更新和删除。
 - 商品发布和编辑支持选填闲鱼链接，商品详情中提供安全的新窗口跳转。
