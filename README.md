@@ -11,7 +11,7 @@
 5. 若只需增加“靓图欣赏”，运行增量脚本 [`supabase/rc_gallery.sql`](./supabase/rc_gallery.sql)，不会改动现有账号、商品或说明书数据。
 6. 将提供的车型说明书目录导入数据库时，在 Supabase SQL Editor 中运行 [`supabase/import_manual_catalog.sql`](./supabase/import_manual_catalog.sql)。这些记录为公共只读资料，不归属个人账号；脚本可重复执行，不会按相同 PDF 链接重复插入。
 7. 若只需启用说明书链接反馈，在 Supabase SQL Editor 中运行 [`supabase/manual_link_reports.sql`](./supabase/manual_link_reports.sql)。登录用户可对每条说明书标记一次“无法打开”，管理员可清零累计数量。说明书与靓图的赞踩功能需运行 [`supabase/schema.sql`](./supabase/schema.sql) 完成数据表和函数迁移。
-8. 在 Supabase SQL Editor 中运行 [`supabase/manual_admin.sql`](./supabase/manual_admin.sql)，将 MH 账号设为唯一说明书管理员；此后仅 MH 可新增、编辑和删除说明书。
+8. 在 Supabase SQL Editor 中运行 [`supabase/manual_admin.sql`](./supabase/manual_admin.sql)，将 MH 账号设为唯一说明书管理员，并创建可由管理员维护的说明书品牌表；此后仅 MH 可新增、编辑和删除说明书及品牌。
 9. 安装 Supabase CLI 并关联项目，然后部署昵称注册 Edge Function：`supabase functions deploy register-nickname --project-ref ygklgnablhnitcsptqor`。
 10. 启动开发服务器：`npm run dev`
 
@@ -34,7 +34,7 @@
 - 微信昵称 + 密码注册 / 登录、个人联系方式资料维护。
 - 所在群支持多选，可从常用群列表选择或输入其他群名；商品详情会展示卖家所在的全部群聊。
 - 发布时自动带入个人资料中的微信号和所在群；发布、编辑、删除自己的闲置，或设置售卖中 / 已售 / 下架状态；下架商品会从公开集市隐藏。
-- 说明书展示页与管理员管理页分离；管理员在独立列表页新增、编辑、删除和预览说明书，设置田宫、Traxxas、Arrma、Losi、京商品牌和“可用 / 不可用”状态，并可拖拽排序或使用上移、下移、置顶、置底按钮。封面可上传并裁剪为 300 × 200 JPEG；新添加的说明书默认为“不可用”，只有可用说明书对访客展示。
+- 说明书展示页与管理员管理页分离；管理员可独立新增、删除品牌，并在说明书列表页新增、编辑、删除和预览说明书，设置品牌和“可用 / 不可用”状态，并可拖拽排序或使用上移、下移、置顶、置底按钮。删除正在使用的品牌会清空相关说明书的品牌归属，但保留说明书资料。封面可上传并裁剪为 300 × 200 JPEG；新添加的说明书默认为“不可用”，只有可用说明书对访客展示。
 - 仅 MH 管理员可以新增、编辑和删除说明书；普通用户可以查看、标记无法打开并各自对每条说明书投一次赞或踩。管理员可清零无法打开数量。
 - 登录用户可以将无法访问的说明书链接标记一次，卡片展示反馈累计数，方便维护者排查失效或超时链接。
 - 靓图欣赏独立页面展示 RC 美照；每位用户最多上传 10 张，照片会按现有压缩逻辑缩放至 1920 × 1080 边界内并保存为 JPEG，用户可以删除自己的照片，并对每张靓图投一次赞或踩。

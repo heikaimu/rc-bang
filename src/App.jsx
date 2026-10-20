@@ -13,7 +13,6 @@ import { compressImage } from './imageCompression'
 const EMPTY_PROFILE = { nickname: '', wechat_id: '', group_names: [], avatar_url: '' }
 const CATEGORIES = ['全部好物', '整车', '配件', '电装', '工具']
 const RC_GROUPS = ['Radio电波通信交流群', 'UDR', '京商Nsr电单摩托交流群']
-const MANUAL_BRANDS = ['田宫', 'Traxxas', 'Arrma', 'Losi', '京商']
 
 async function usernameToAuthEmail(username) {
   const normalized = username.normalize('NFKC').trim().toLocaleLowerCase('zh-CN')
@@ -208,6 +207,8 @@ function App() {
   const [profile, setProfile] = useState(EMPTY_PROFILE)
   const [listings, setListings] = useState([])
   const [manuals, setManuals] = useState([])
+  const [manualBrands, setManualBrands] = useState([])
+  const [manualBrandLoadError, setManualBrandLoadError] = useState('')
   const [manualLoadError, setManualLoadError] = useState('')
   const [isManualAdmin, setIsManualAdmin] = useState(false)
   const [manualAdminError, setManualAdminError] = useState('')
@@ -241,6 +242,20 @@ function App() {
   const notify = useCallback((message, type = 'success') => {
     setNotice({ message, type })
     window.setTimeout(() => setNotice(null), 3800)
+  }, [])
+
+  const loadManualBrands = useCallback(async () => {
+    if (!supabase) {
+      setManualBrands([])
+      return
+    }
+    const { data, error } = await supabase.from('manual_brands').select('name').order('name')
+    if (error) {
+      setManualBrandLoadError(`读取说明书品牌失败：${error.message}`)
+      return
+    }
+    setManualBrandLoadError('')
+    setManualBrands(data ?? [])
   }, [])
 
   const loadListings = useCallback(async () => {
@@ -392,6 +407,7 @@ function App() {
       loadProfile(currentSession?.user)
       loadManualAdminStatus(currentSession?.user)
       loadManuals()
+      loadManualBrands()
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
       setSession(currentSession)
@@ -402,6 +418,7 @@ function App() {
         loadManualVotes()
         loadGalleryVotes()
         loadManuals()
+        loadManualBrands()
       }, 0)
     })
     loadListings()
@@ -410,11 +427,12 @@ function App() {
     loadManualVotes()
     loadGalleryPhotos()
     loadGalleryVotes()
+    loadManualBrands()
     return () => {
       active = false
       subscription.unsubscribe()
     }
-  }, [loadListings, loadManuals, loadManualReports, loadManualVotes, loadGalleryPhotos, loadGalleryVotes, loadManualAdminStatus, loadProfile])
+  }, [loadListings, loadManuals, loadManualBrands, loadManualReports, loadManualVotes, loadGalleryPhotos, loadGalleryVotes, loadManualAdminStatus, loadProfile])
 
   const visibleListings = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase()
@@ -593,6 +611,22 @@ function App() {
     } catch (error) {
       notify(`删除说明书失败：${error.message}`, 'error')
     }
+  }
+
+  const addManualBrand = async (name) => {
+    if (!supabase || !isManualAdmin) throw new Error('只有说明书管理员可以添加品牌。')
+    const { data, error } = await supabase.from('manual_brands').insert({ name }).select('name').single()
+    if (error) throw error
+    setManualBrands((current) => [...current, data].sort((left, right) => left.name.localeCompare(right.name, 'zh-CN')))
+  }
+
+  const removeManualBrand = async (brand) => {
+    if (!supabase || !isManualAdmin) throw new Error('只有说明书管理员可以删除品牌。')
+    const { error } = await supabase.from('manual_brands').delete().eq('name', brand)
+    if (error) throw error
+    setManualBrands((current) => current.filter((item) => item.name !== brand))
+    setManuals((current) => current.map((manual) => manual.brand === brand ? { ...manual, brand: null } : manual))
+    if (manualBrand === brand) setManualBrand('全部品牌')
   }
 
   const reorderManual = async (manual, targetIndex) => {
@@ -868,7 +902,7 @@ function App() {
           <span className="brand-caption">希望有帮到你！</span>
         </a>
         <nav className="main-nav" aria-label="主导航">
-          <button className={page === 'manuals' || page === 'manual-admin' ? 'nav-link active' : 'nav-link'} onClick={() => setPage('manuals')}>说明书</button>
+          <button className={page === 'manuals' || page === 'manual-admin' || page === 'manual-brand-admin' ? 'nav-link active' : 'nav-link'} onClick={() => setPage('manuals')}>说明书</button>
           <button className={page === 'market' ? 'nav-link active' : 'nav-link'} onClick={() => setPage('market')}>闲置集市</button>
           <button className={page === 'gallery' ? 'nav-link active' : 'nav-link'} onClick={() => setPage('gallery')}>靓图欣赏</button>
         </nav>
@@ -953,7 +987,7 @@ function App() {
               {isManualAdmin && <button className="button button-outline" onClick={() => setPage('manual-admin')}>说明书管理</button>}
             </div>
             <div className="manual-brand-filters" aria-label="按品牌筛选说明书">
-              {['全部品牌', ...MANUAL_BRANDS].map((brand) => (
+              {['全部品牌', ...manualBrands.map((brand) => brand.name)].map((brand) => (
                 <button
                   key={brand}
                   className={`manual-brand-filter${manualBrand === brand ? ' selected' : ''}`}
@@ -963,6 +997,7 @@ function App() {
               ))}
             </div>
             <p className="manual-access-hint">部分说明书链接可能需要科学上网才能打开。如遇到无法访问的情况，请在卡片上点击“无法打开？标记”，帮助管理员排查。</p>
+            {manualBrandLoadError && <div className="manual-report-notice">{manualBrandLoadError} 请在 Supabase 执行更新后的 <code>supabase/manual_admin.sql</code>。</div>}
             {session && manualAdminError && <div className="manual-report-notice">{manualAdminError} 请在 Supabase 执行 <code>supabase/manual_admin.sql</code>。</div>}
             {manualLoadError && <div className="manual-report-notice">{manualLoadError} 请在 Supabase 执行更新后的 <code>supabase/schema.sql</code> 以迁移说明书状态、品牌和排序字段。</div>}
             {manualReportError && <div className="manual-report-notice">{manualReportError} 请在 Supabase 执行 <code>supabase/manual_link_reports.sql</code> 后启用链接标记。</div>}
@@ -998,10 +1033,12 @@ function App() {
                   </div>
                   <div className="manual-admin-heading-actions">
                     <button className="button button-outline" onClick={() => setPage('manuals')}>返回说明书</button>
+                    <button className="button button-outline" onClick={() => setPage('manual-brand-admin')}>品牌管理</button>
                     <button className="button button-primary" onClick={openManualCreate}><Plus size={15} />新增说明书</button>
                   </div>
                 </div>
                 {manualAdminError && <div className="manual-report-notice">{manualAdminError}</div>}
+                {manualBrandLoadError && <div className="manual-report-notice">{manualBrandLoadError} 请在 Supabase 执行更新后的 <code>supabase/manual_admin.sql</code>。</div>}
                 {manualLoadError && <div className="manual-report-notice">{manualLoadError} 请在 Supabase 执行更新后的 <code>supabase/schema.sql</code>。</div>}
                 {manuals.length === 0 ? (
                   <div className="empty-market manual-empty"><h3>还没有说明书资料</h3><p>点击“新增说明书”添加第一份资料。</p></div>
@@ -1061,6 +1098,16 @@ function App() {
               </div>
             )}
           </section>
+        ) : page === 'manual-brand-admin' ? (
+          <ManualBrandManager
+            isAdmin={isManualAdmin}
+            brands={manualBrands}
+            manuals={manuals}
+            loadError={manualBrandLoadError}
+            onBack={() => setPage('manual-admin')}
+            onAdd={addManualBrand}
+            onDelete={removeManualBrand}
+          />
         ) : (
           <section className="gallery-page">
             <div className="manuals-heading">
@@ -1130,6 +1177,7 @@ function App() {
       />}
       {manualOpen && <ManualModal
         manual={editingManual}
+        brands={manualBrands}
         busy={busy}
         onClose={() => { setManualOpen(false); setEditingManual(null) }}
         onSave={saveManual}
@@ -1344,7 +1392,103 @@ function ManualPreviewModal({ manual, onClose }) {
   )
 }
 
-function ManualModal({ manual, busy, onClose, onSave }) {
+function ManualBrandManager({ isAdmin, brands, manuals, loadError, onBack, onAdd, onDelete }) {
+  const [name, setName] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  const addBrand = async (event) => {
+    event.preventDefault()
+    const normalizedName = name.trim()
+    if (!normalizedName) {
+      setError('请输入品牌名称。')
+      return
+    }
+    if (normalizedName.length > 40) {
+      setError('品牌名称不能超过 40 个字符。')
+      return
+    }
+    if (brands.some((brand) => brand.name.toLocaleLowerCase() === normalizedName.toLocaleLowerCase())) {
+      setError('这个品牌已存在。')
+      return
+    }
+    setBusy(true)
+    setError('')
+    try {
+      await onAdd(normalizedName)
+      setName('')
+    } catch (addError) {
+      setError(`添加品牌失败：${addError.message}`)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const deleteBrand = async (brand) => {
+    const usageCount = manuals.filter((manual) => manual.brand === brand.name).length
+    const usageMessage = usageCount
+      ? `\n\n${usageCount} 份说明书将变为“未设置品牌”，说明书资料会保留。`
+      : ''
+    if (!window.confirm(`确定删除品牌“${brand.name}”吗？${usageMessage}`)) return
+    setBusy(true)
+    setError('')
+    try {
+      await onDelete(brand.name)
+    } catch (deleteError) {
+      setError(`删除品牌失败：${deleteError.message}`)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section className="manuals-page manual-admin-page">
+      {isAdmin ? (
+        <>
+          <div className="manuals-heading">
+            <div>
+              <span className="section-kicker">RC MANUALS / BRANDS</span>
+              <h1>品牌管理</h1>
+              <p>添加或删除说明书品牌。删除已使用的品牌时，说明书资料会保留，但品牌归属会清空。</p>
+            </div>
+            <button className="button button-outline" onClick={onBack}>返回说明书管理</button>
+          </div>
+          {loadError && <div className="manual-report-notice">{loadError} 请在 Supabase 执行更新后的 <code>supabase/manual_admin.sql</code>。</div>}
+          <form className="manual-brand-create" onSubmit={addBrand}>
+            <label>
+              <span>新品牌名称</span>
+              <input value={name} maxLength={40} onChange={(event) => setName(event.target.value)} placeholder="例如：京商" />
+            </label>
+            <button className="button button-primary" type="submit" disabled={busy}><Plus size={15} />添加品牌</button>
+          </form>
+          {error && <p className="form-error">{error}</p>}
+          <div className="manual-brand-admin-list">
+            {brands.length === 0 ? (
+              <div className="empty-market manual-empty"><h3>还没有品牌</h3><p>添加品牌后，即可用于说明书录入和筛选。</p></div>
+            ) : brands.map((brand) => {
+              const usageCount = manuals.filter((manual) => manual.brand === brand.name).length
+              return (
+                <div className="manual-brand-admin-row" key={brand.name}>
+                  <strong>{brand.name}</strong>
+                  <span>{usageCount} 份说明书使用中</span>
+                  <button className="button button-outline delete-control manual-admin-action" onClick={() => deleteBrand(brand)} disabled={busy}><Trash2 size={13} />删除</button>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      ) : (
+        <div className="empty-market manual-empty">
+          <h3>仅管理员可管理品牌</h3>
+          <p>普通用户可以浏览说明书共享区。</p>
+          <button className="button button-outline" onClick={onBack}>返回说明书管理</button>
+        </div>
+      )}
+    </section>
+  )
+}
+
+function ManualModal({ manual, brands, busy, onClose, onSave }) {
   const [title, setTitle] = useState(manual?.title ?? '')
   const [brand, setBrand] = useState(manual?.brand ?? '')
   const [manualUrl, setManualUrl] = useState(manual?.manual_url ?? '')
@@ -1400,7 +1544,7 @@ function ManualModal({ manual, busy, onClose, onSave }) {
       setError('标题和链接不能为空。')
       return
     }
-    if (!MANUAL_BRANDS.includes(brand)) {
+    if (!brands.some((item) => item.name === brand)) {
       setError('请选择说明书品牌。')
       return
     }
@@ -1452,7 +1596,7 @@ function ManualModal({ manual, busy, onClose, onSave }) {
       <p className="modal-subtitle">拖动调整封面裁剪范围，保存为 300 × 200 JPEG。</p>
       <form className="form-stack listing-form" onSubmit={submit}>
         <label>标题<input required maxLength="80" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="例如：SCX10 III 组装说明书" /></label>
-        <label>品牌<select required value={brand} onChange={(event) => setBrand(event.target.value)}><option value="" disabled>请选择品牌</option>{MANUAL_BRANDS.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
+        <label>品牌<select required value={brand} onChange={(event) => setBrand(event.target.value)}><option value="" disabled>{brands.length ? '请选择品牌' : '请先添加品牌'}</option>{brands.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select></label>
         <div className="manual-cover-field">
           <span className="form-section-label">封面图 {manual?.cover_url && !coverSource && <span>已有封面，上传新图可替换</span>}</span>
           <label className="button button-outline avatar-upload-button manual-cover-upload"><Camera size={15} />{coverSource || manual?.cover_url ? '更换封面图' : '上传封面图'}<input type="file" accept="image/*" onChange={chooseCover} /></label>

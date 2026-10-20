@@ -25,9 +25,7 @@ begin
       and table_name = 'manuals'
       and column_name = 'brand'
   ) then
-    alter table public.manuals
-      add column brand text
-      check (brand is null or brand in ('田宫', 'Traxxas', 'Arrma', 'Losi', '京商'));
+    alter table public.manuals add column brand text;
   end if;
   update public.manuals
   set brand = case
@@ -71,10 +69,55 @@ begin
 end;
 $$;
 
+create table if not exists public.manual_brands (
+  name text primary key check (char_length(name) between 1 and 40)
+);
+
+insert into public.manual_brands (name)
+values ('田宫'), ('Traxxas'), ('Arrma'), ('Losi'), ('京商')
+on conflict (name) do nothing;
+
+insert into public.manual_brands (name)
+select distinct brand from public.manuals where brand is not null
+on conflict (name) do nothing;
+
 alter table public.manuals drop constraint if exists manuals_brand_check;
-alter table public.manuals
-  add constraint manuals_brand_check
-  check (brand is null or brand in ('田宫', 'Traxxas', 'Arrma', 'Losi', '京商'));
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'manuals_brand_fkey'
+      and conrelid = 'public.manuals'::regclass
+  ) then
+    alter table public.manuals
+      add constraint manuals_brand_fkey
+      foreign key (brand) references public.manual_brands (name) on delete set null;
+  end if;
+end;
+$$;
+
+alter table public.manual_brands enable row level security;
+revoke all on public.manual_brands from anon, authenticated;
+grant select on public.manual_brands to anon, authenticated;
+grant insert, delete on public.manual_brands to authenticated;
+
+drop policy if exists "Anyone can view manual brands" on public.manual_brands;
+create policy "Anyone can view manual brands"
+on public.manual_brands for select
+to anon, authenticated
+using (true);
+
+drop policy if exists "MH admin can create manual brands" on public.manual_brands;
+create policy "MH admin can create manual brands"
+on public.manual_brands for insert
+to authenticated
+with check (public.is_rc_manual_admin());
+
+drop policy if exists "MH admin can delete manual brands" on public.manual_brands;
+create policy "MH admin can delete manual brands"
+on public.manual_brands for delete
+to authenticated
+using (public.is_rc_manual_admin());
 
 create or replace function public.reorder_rc_manuals(manual_ids uuid[])
 returns void
