@@ -16,6 +16,23 @@ $$;
 revoke all on function public.is_rc_manual_admin() from public, anon;
 grant execute on function public.is_rc_manual_admin() to authenticated;
 
+do $$
+begin
+  if not exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'manuals'
+      and column_name = 'status'
+  ) then
+    alter table public.manuals
+      add column status text not null default 'unavailable'
+      check (status in ('available', 'unavailable'));
+    update public.manuals set status = 'available';
+  end if;
+end;
+$$;
+
 drop policy if exists "Users can create their own manuals" on public.manuals;
 drop policy if exists "Users can update their own manuals" on public.manuals;
 drop policy if exists "Users can delete their own manuals" on public.manuals;
@@ -36,5 +53,18 @@ with check (public.is_rc_manual_admin());
 drop policy if exists "MH admin can delete manuals" on public.manuals;
 create policy "MH admin can delete manuals"
 on public.manuals for delete
+to authenticated
+using (public.is_rc_manual_admin());
+
+drop policy if exists "Anyone can view manuals" on public.manuals;
+drop policy if exists "Anyone can view available manuals" on public.manuals;
+create policy "Anyone can view available manuals"
+on public.manuals for select
+to anon, authenticated
+using (status = 'available');
+
+drop policy if exists "MH admin can view all manuals" on public.manuals;
+create policy "MH admin can view all manuals"
+on public.manuals for select
 to authenticated
 using (public.is_rc_manual_admin());

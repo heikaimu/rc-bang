@@ -34,11 +34,29 @@ create table if not exists public.manuals (
   title text not null check (char_length(title) between 1 and 80),
   cover_url text,
   manual_url text not null check (char_length(manual_url) between 1 and 2048),
+  status text not null default 'unavailable' check (status in ('available', 'unavailable')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
 alter table public.manuals alter column user_id drop not null;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'manuals'
+      and column_name = 'status'
+  ) then
+    alter table public.manuals
+      add column status text not null default 'unavailable'
+      check (status in ('available', 'unavailable'));
+    update public.manuals set status = 'available';
+  end if;
+end;
+$$;
 
 create table if not exists public.manual_link_reports (
   id uuid primary key default gen_random_uuid(),
@@ -119,6 +137,62 @@ $$;
 revoke all on function public.get_manual_link_report_summary() from public, anon, authenticated;
 grant execute on function public.get_manual_link_report_summary() to anon, authenticated;
 
+create or replace function public.reset_manual_link_reports(target_manual_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if not public.is_rc_manual_admin() then
+    raise exception 'Only the manual administrator can reset manual reports';
+  end if;
+  delete from public.manual_link_reports where manual_id = target_manual_id;
+end;
+$$;
+
+revoke all on function public.reset_manual_link_reports(uuid) from public, anon, authenticated;
+grant execute on function public.reset_manual_link_reports(uuid) to authenticated;
+
+create table if not exists public.manual_votes (
+  id uuid primary key default gen_random_uuid(),
+  manual_id uuid not null references public.manuals (id) on delete cascade,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  vote text not null check (vote in ('up', 'down')),
+  created_at timestamptz not null default now(),
+  constraint manual_votes_one_per_user unique (manual_id, user_id)
+);
+
+alter table public.manual_votes enable row level security;
+revoke all on public.manual_votes from anon, authenticated;
+grant insert on public.manual_votes to authenticated;
+
+drop policy if exists "Signed-in users can vote on manuals once" on public.manual_votes;
+create policy "Signed-in users can vote on manuals once"
+on public.manual_votes for insert
+to authenticated
+with check ((select auth.uid()) = user_id);
+
+create or replace function public.get_manual_vote_summary()
+returns table (manual_id uuid, up_count bigint, down_count bigint, my_vote text)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select
+    manuals.id,
+    count(votes.id) filter (where votes.vote = 'up'),
+    count(votes.id) filter (where votes.vote = 'down'),
+    max(votes.vote) filter (where votes.user_id = auth.uid())
+  from public.manuals
+  left join public.manual_votes as votes on votes.manual_id = manuals.id
+  group by manuals.id;
+$$;
+
+revoke all on function public.get_manual_vote_summary() from public, anon, authenticated;
+grant execute on function public.get_manual_vote_summary() to anon, authenticated;
+
 create table if not exists public.rc_gallery_photos (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
@@ -127,6 +201,45 @@ create table if not exists public.rc_gallery_photos (
   constraint rc_gallery_photos_owner_path_check
     check (storage_path like user_id::text || '/gallery/%')
 );
+
+create table if not exists public.rc_gallery_photo_votes (
+  id uuid primary key default gen_random_uuid(),
+  photo_id uuid not null references public.rc_gallery_photos (id) on delete cascade,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  vote text not null check (vote in ('up', 'down')),
+  created_at timestamptz not null default now(),
+  constraint rc_gallery_photo_votes_one_per_user unique (photo_id, user_id)
+);
+
+alter table public.rc_gallery_photo_votes enable row level security;
+revoke all on public.rc_gallery_photo_votes from anon, authenticated;
+grant insert on public.rc_gallery_photo_votes to authenticated;
+
+drop policy if exists "Signed-in users can vote on gallery photos once" on public.rc_gallery_photo_votes;
+create policy "Signed-in users can vote on gallery photos once"
+on public.rc_gallery_photo_votes for insert
+to authenticated
+with check ((select auth.uid()) = user_id);
+
+create or replace function public.get_rc_gallery_photo_vote_summary()
+returns table (photo_id uuid, up_count bigint, down_count bigint, my_vote text)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select
+    photos.id,
+    count(votes.id) filter (where votes.vote = 'up'),
+    count(votes.id) filter (where votes.vote = 'down'),
+    max(votes.vote) filter (where votes.user_id = auth.uid())
+  from public.rc_gallery_photos as photos
+  left join public.rc_gallery_photo_votes as votes on votes.photo_id = photos.id
+  group by photos.id;
+$$;
+
+revoke all on function public.get_rc_gallery_photo_vote_summary() from public, anon, authenticated;
+grant execute on function public.get_rc_gallery_photo_vote_summary() to anon, authenticated;
 
 create index if not exists rc_gallery_photos_created_at_idx
   on public.rc_gallery_photos (created_at desc);
@@ -371,10 +484,17 @@ to authenticated
 using ((select auth.uid()) = user_id);
 
 drop policy if exists "Anyone can view manuals" on public.manuals;
-create policy "Anyone can view manuals"
+drop policy if exists "Anyone can view available manuals" on public.manuals;
+create policy "Anyone can view available manuals"
 on public.manuals for select
 to anon, authenticated
-using (true);
+using (status = 'available');
+
+drop policy if exists "MH admin can view all manuals" on public.manuals;
+create policy "MH admin can view all manuals"
+on public.manuals for select
+to authenticated
+using (public.is_rc_manual_admin());
 
 drop policy if exists "Anyone can view RC gallery photos" on public.rc_gallery_photos;
 create policy "Anyone can view RC gallery photos"

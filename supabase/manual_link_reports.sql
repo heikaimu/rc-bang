@@ -35,3 +35,20 @@ $$;
 
 revoke all on function public.get_manual_link_report_summary() from public, anon, authenticated;
 grant execute on function public.get_manual_link_report_summary() to anon, authenticated;
+
+create or replace function public.reset_manual_link_reports(target_manual_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if not public.is_rc_manual_admin() then
+    raise exception 'Only the manual administrator can reset manual reports';
+  end if;
+  delete from public.manual_link_reports where manual_id = target_manual_id;
+end;
+$$;
+
+revoke all on function public.reset_manual_link_reports(uuid) from public, anon, authenticated;
+grant execute on function public.reset_manual_link_reports(uuid) to authenticated;

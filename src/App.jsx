@@ -3,7 +3,7 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRe
 import {
   ArrowLeft, ArrowRight, Camera, Check, CircleUserRound,
   Copy, ImagePlus, LoaderCircle, LogOut, Plus, Search, Settings2,
-  ShieldCheck, SlidersHorizontal, Trash2, X,
+  ShieldCheck, SlidersHorizontal, ThumbsDown, ThumbsUp, Trash2, X,
 } from 'lucide-react'
 import Cropper from 'cropperjs'
 import 'cropperjs/dist/cropper.css'
@@ -207,11 +207,14 @@ function App() {
   const [profile, setProfile] = useState(EMPTY_PROFILE)
   const [listings, setListings] = useState([])
   const [manuals, setManuals] = useState([])
+  const [manualLoadError, setManualLoadError] = useState('')
   const [isManualAdmin, setIsManualAdmin] = useState(false)
   const [manualAdminError, setManualAdminError] = useState('')
   const [manualReports, setManualReports] = useState({})
   const [manualReportError, setManualReportError] = useState('')
+  const [manualVotes, setManualVotes] = useState({})
   const [galleryPhotos, setGalleryPhotos] = useState([])
+  const [galleryVotes, setGalleryVotes] = useState({})
   const [galleryLoading, setGalleryLoading] = useState(false)
   const [galleryError, setGalleryError] = useState('')
   const [page, setPage] = useState('market')
@@ -255,12 +258,15 @@ function App() {
       setManuals([])
       return
     }
-    const { data, error } = await supabase.from('manuals').select('*').order('created_at', { ascending: false })
+    const { data, error } = await supabase.from('manuals')
+      .select('id, user_id, title, cover_url, manual_url, status, created_at, updated_at')
+      .order('created_at', { ascending: false })
     if (error) {
       console.warn('Manuals query failed:', error.message)
-      setManuals([])
+      setManualLoadError(`读取说明书失败：${error.message}`)
       return
     }
+    setManualLoadError('')
     setManuals(data ?? [])
   }, [])
 
@@ -280,6 +286,23 @@ function App() {
       reportedByMe: row.reported_by_me,
     }])))
   }, [])
+
+  const loadManualVotes = useCallback(async () => {
+    if (!supabase) {
+      setManualVotes({})
+      return
+    }
+    const { data, error } = await supabase.rpc('get_manual_vote_summary')
+    if (error) {
+      notify(`无法读取说明书赞踩数量：${error.message}`, 'error')
+      return
+    }
+    setManualVotes(Object.fromEntries((data ?? []).map((row) => [row.manual_id, {
+      up: Number(row.up_count),
+      down: Number(row.down_count),
+      myVote: row.my_vote,
+    }])))
+  }, [notify])
 
   const loadManualAdminStatus = useCallback(async (user) => {
     if (!supabase || !user) {
@@ -315,6 +338,23 @@ function App() {
     setGalleryLoading(false)
   }, [])
 
+  const loadGalleryVotes = useCallback(async () => {
+    if (!supabase) {
+      setGalleryVotes({})
+      return
+    }
+    const { data, error } = await supabase.rpc('get_rc_gallery_photo_vote_summary')
+    if (error) {
+      notify(`无法读取靓图赞踩数量：${error.message}`, 'error')
+      return
+    }
+    setGalleryVotes(Object.fromEntries((data ?? []).map((row) => [row.photo_id, {
+      up: Number(row.up_count),
+      down: Number(row.down_count),
+      myVote: row.my_vote,
+    }])))
+  }, [notify])
+
   const loadProfile = useCallback(async (user) => {
     if (!user || !supabase) {
       setProfile(EMPTY_PROFILE)
@@ -345,6 +385,7 @@ function App() {
       setSession(currentSession)
       loadProfile(currentSession?.user)
       loadManualAdminStatus(currentSession?.user)
+      loadManuals()
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
       setSession(currentSession)
@@ -352,17 +393,22 @@ function App() {
         loadProfile(currentSession?.user)
         loadManualAdminStatus(currentSession?.user)
         loadManualReports()
+        loadManualVotes()
+        loadGalleryVotes()
+        loadManuals()
       }, 0)
     })
     loadListings()
     loadManuals()
     loadManualReports()
+    loadManualVotes()
     loadGalleryPhotos()
+    loadGalleryVotes()
     return () => {
       active = false
       subscription.unsubscribe()
     }
-  }, [loadListings, loadManuals, loadManualReports, loadManualAdminStatus, loadGalleryPhotos, loadProfile])
+  }, [loadListings, loadManuals, loadManualReports, loadManualVotes, loadGalleryPhotos, loadGalleryVotes, loadManualAdminStatus, loadProfile])
 
   const visibleListings = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase()
@@ -494,6 +540,7 @@ function App() {
         title: manual.title.trim(),
         cover_url: coverUrl,
         manual_url: manual.manual_url.trim(),
+        status: manual.status,
         user_id: session.user.id,
       }
       const result = editingManual
@@ -558,6 +605,64 @@ function App() {
     }
     await loadManualReports()
     notify('已记录链接无法打开的反馈，谢谢提醒。')
+  }
+
+  const resetManualReports = async (manual) => {
+    if (!isManualAdmin) return
+    if (!window.confirm(`确定清零“${manual.title}”的无法打开数量吗？清零后车友可以重新标记。`)) return
+    const { error } = await supabase.rpc('reset_manual_link_reports', { target_manual_id: manual.id })
+    if (error) {
+      notify(`清零反馈失败：${error.message}`, 'error')
+      return
+    }
+    await loadManualReports()
+    notify('无法打开数量已清零')
+  }
+
+  const voteManual = async (manual, vote) => {
+    if (!session) {
+      setAuthOpen(true)
+      return
+    }
+    if (manualVotes[manual.id]?.myVote) return
+    const { error } = await supabase.from('manual_votes').insert({
+      manual_id: manual.id,
+      user_id: session.user.id,
+      vote,
+    })
+    if (error) {
+      if (error.code === '23505') {
+        notify('每份说明书只能赞或踩一次。', 'error')
+        await loadManualVotes()
+        return
+      }
+      notify(`投票失败：${error.message}`, 'error')
+      return
+    }
+    await loadManualVotes()
+  }
+
+  const voteGalleryPhoto = async (photo, vote) => {
+    if (!session) {
+      setAuthOpen(true)
+      return
+    }
+    if (galleryVotes[photo.id]?.myVote) return
+    const { error } = await supabase.from('rc_gallery_photo_votes').insert({
+      photo_id: photo.id,
+      user_id: session.user.id,
+      vote,
+    })
+    if (error) {
+      if (error.code === '23505') {
+        notify('每张靓图只能赞或踩一次。', 'error')
+        await loadGalleryVotes()
+        return
+      }
+      notify(`投票失败：${error.message}`, 'error')
+      return
+    }
+    await loadGalleryVotes()
   }
 
   const uploadGalleryPhotos = async (event) => {
@@ -814,15 +919,16 @@ function App() {
               {isManualAdmin && <button className="button button-outline" onClick={openManualCreate}>发布说明书</button>}
             </div>
             {session && manualAdminError && <div className="manual-report-notice">{manualAdminError} 请在 Supabase 执行 <code>supabase/manual_admin.sql</code>。</div>}
+            {manualLoadError && <div className="manual-report-notice">{manualLoadError} 请在 Supabase 执行 <code>supabase/schema.sql</code> 以迁移说明书状态字段。</div>}
             {manualReportError && <div className="manual-report-notice">{manualReportError} 请在 Supabase 执行 <code>supabase/manual_link_reports.sql</code> 后启用链接标记。</div>}
-            {manuals.length === 0 ? (
+            {manuals.filter((manual) => isManualAdmin || manual.status !== 'unavailable').length === 0 ? (
               <div className="empty-market manual-empty">
                 <h3>还没有说明书资料</h3>
                 <p>分享装车、调参、保养说明或其他 RC 相关文档。</p>
               </div>
             ) : (
               <div className="manual-grid">
-                {manuals.map((manual) => <ManualCard
+                {manuals.filter((manual) => isManualAdmin || manual.status !== 'unavailable').map((manual) => <ManualCard
                   key={manual.id}
                   item={manual}
                   allowManage={isManualAdmin}
@@ -830,8 +936,12 @@ function App() {
                   onDelete={() => removeManual(manual)}
                   reportCount={manualReports[manual.id]?.count ?? 0}
                   reportedByMe={manualReports[manual.id]?.reportedByMe ?? false}
+                  voteCounts={manualVotes[manual.id]}
                   signedIn={Boolean(session)}
                   onReport={() => reportManualUnavailable(manual)}
+                  onResetReports={() => resetManualReports(manual)}
+                  onVote={(vote) => voteManual(manual, vote)}
+                  isManualAdmin={isManualAdmin}
                 />)}
               </div>
             )}
@@ -878,7 +988,10 @@ function App() {
                       </a>
                       <div className="gallery-card-footer">
                         <time>{formatDate(photo.created_at)}</time>
-                        {photo.user_id === session?.user?.id && <button className="gallery-delete" onClick={() => removeGalleryPhoto(photo)} aria-label="删除这张照片"><Trash2 size={15} />删除</button>}
+                        <div className="gallery-card-actions">
+                          <VoteButtons counts={galleryVotes[photo.id]} signedIn={Boolean(session)} onVote={(vote) => voteGalleryPhoto(photo, vote)} />
+                          {photo.user_id === session?.user?.id && <button className="gallery-delete" onClick={() => removeGalleryPhoto(photo)} aria-label="删除这张照片"><Trash2 size={15} />删除</button>}
+                        </div>
                       </div>
                     </article>
                   )
@@ -1051,7 +1164,7 @@ function AuthModal({ onClose, onSuccess }) {
   )
 }
 
-function ManualCard({ item, allowManage = false, onEdit, onDelete, reportCount = 0, reportedByMe = false, signedIn = false, onReport }) {
+function ManualCard({ item, allowManage = false, onEdit, onDelete, reportCount = 0, reportedByMe = false, voteCounts, signedIn = false, onReport, onResetReports, onVote, isManualAdmin = false }) {
   const openLink = () => window.open(item.manual_url, '_blank', 'noopener,noreferrer')
   return (
     <article className="manual-card">
@@ -1059,7 +1172,11 @@ function ManualCard({ item, allowManage = false, onEdit, onDelete, reportCount =
         <img src={item.cover_url || 'https://images.unsplash.com/photo-1516939884455-1445c8652f83?auto=format&fit=crop&w=800&q=80'} alt={item.title} loading="lazy" />
       </button>
       <div className="manual-body">
-        <div className="manual-meta"><span className="manual-tag">说明书</span><time>{formatDate(item.created_at)}</time></div>
+        <div className="manual-meta">
+          <span className="manual-tag">说明书</span>
+          {allowManage && <span className={`manual-status manual-status-${item.status || 'available'}`}>{item.status === 'unavailable' ? '不可用' : '可用'}</span>}
+          <time>{formatDate(item.created_at)}</time>
+        </div>
         <h3>{item.title}</h3>
         <button className="manual-open" onClick={openLink}>打开查看 <ArrowRight size={14} /></button>
         <button
@@ -1076,14 +1193,31 @@ function ManualCard({ item, allowManage = false, onEdit, onDelete, reportCount =
             <button className="button button-outline delete-control" onClick={onDelete}>删除</button>
           </div>
         )}
+        {isManualAdmin && <button className="manual-report-reset" onClick={onResetReports}>清零无法打开数量</button>}
+        <VoteButtons counts={voteCounts} signedIn={signedIn} onVote={onVote} />
       </div>
     </article>
+  )
+}
+
+function VoteButtons({ counts, signedIn, onVote }) {
+  const myVote = counts?.myVote
+  return (
+    <div className="vote-buttons" aria-label="赞踩">
+      <button className={myVote === 'up' ? 'vote-button is-selected' : 'vote-button'} onClick={() => onVote('up')} disabled={Boolean(myVote)} title={signedIn ? (myVote ? '已投票' : '赞') : '登录后投票'} aria-label={`赞，${counts?.up ?? 0}`}>
+        <ThumbsUp size={13} />{counts?.up ?? 0}
+      </button>
+      <button className={myVote === 'down' ? 'vote-button is-selected' : 'vote-button'} onClick={() => onVote('down')} disabled={Boolean(myVote)} title={signedIn ? (myVote ? '已投票' : '踩') : '登录后投票'} aria-label={`踩，${counts?.down ?? 0}`}>
+        <ThumbsDown size={13} />{counts?.down ?? 0}
+      </button>
+    </div>
   )
 }
 
 function ManualModal({ manual, busy, onClose, onSave }) {
   const [title, setTitle] = useState(manual?.title ?? '')
   const [manualUrl, setManualUrl] = useState(manual?.manual_url ?? '')
+  const [status, setStatus] = useState(manual ? manual.status ?? 'available' : 'unavailable')
   const [coverSource, setCoverSource] = useState('')
   const [error, setError] = useState('')
   const cropperRef = useRef(null)
@@ -1167,6 +1301,7 @@ function ManualModal({ manual, busy, onClose, onSave }) {
         cover_url: manual?.cover_url ?? null,
         cover_blob: coverBlob,
         manual_url: normalizedManual,
+        status,
       })
     } catch (cropError) {
       setError(cropError.message)
@@ -1191,6 +1326,7 @@ function ManualModal({ manual, busy, onClose, onSave }) {
               : <span className="avatar-help">支持 JPG / PNG / WEBP，原图不超过 10 MB</span>}
         </div>
         <label>说明书链接<input required type="url" maxLength="1000" value={manualUrl} onChange={(event) => setManualUrl(event.target.value)} placeholder="https://example.com/manual.pdf" /></label>
+        <label>状态<select value={status} onChange={(event) => setStatus(event.target.value)}><option value="available">可用</option><option value="unavailable">不可用</option></select></label>
         {error && <p className="form-error">{error}</p>}
         <button className="button button-primary full-button" type="submit" disabled={busy}>{busy ? '正在保存…' : (manual ? '保存说明书' : '发布说明书')}<ArrowRight size={16} /></button>
       </form>
