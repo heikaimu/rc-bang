@@ -2,7 +2,7 @@ import React from 'react'
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import {
   ArrowLeft, ArrowRight, Camera, Check, CircleUserRound,
-  ChevronDown, ChevronUp, Copy, ImagePlus, LoaderCircle, LogOut, Plus, Search, Settings2,
+  ChevronDown, ChevronUp, Copy, Eye, GripVertical, ImagePlus, LoaderCircle, LogOut, Plus, Search, Settings2,
   ShieldCheck, SlidersHorizontal, ThumbsDown, ThumbsUp, Trash2, X,
 } from 'lucide-react'
 import Cropper from 'cropperjs'
@@ -218,19 +218,22 @@ function App() {
   const [galleryVotes, setGalleryVotes] = useState({})
   const [galleryLoading, setGalleryLoading] = useState(false)
   const [galleryError, setGalleryError] = useState('')
-  const [page, setPage] = useState('market')
+  const [page, setPage] = useState('manuals')
   const [category, setCategory] = useState('全部好物')
+  const [manualBrand, setManualBrand] = useState('全部品牌')
   const [query, setQuery] = useState('')
   const [authOpen, setAuthOpen] = useState(false)
   const [listingOpen, setListingOpen] = useState(false)
   const [manualOpen, setManualOpen] = useState(false)
   const [editingListing, setEditingListing] = useState(null)
   const [editingManual, setEditingManual] = useState(null)
+  const [previewingManual, setPreviewingManual] = useState(null)
   const [selectedListing, setSelectedListing] = useState(null)
   const [profileOpen, setProfileOpen] = useState(false)
   const [notice, setNotice] = useState(null)
   const [busy, setBusy] = useState(false)
   const [manualOrderBusy, setManualOrderBusy] = useState(false)
+  const [draggingManualId, setDraggingManualId] = useState(null)
   const [uploadingPhotos, setUploadingPhotos] = useState(false)
   const [loading, setLoading] = useState(true)
   const configured = Boolean(supabase)
@@ -424,6 +427,10 @@ function App() {
     return result
   }, [category, listings, query])
 
+  const visibleManuals = useMemo(() => manuals.filter((manual) => (
+    manual.status !== 'unavailable' && (manualBrand === '全部品牌' || manual.brand === manualBrand)
+  )), [manualBrand, manuals])
+
   const openCreate = () => {
     if (!session) {
       setAuthOpen(true)
@@ -588,15 +595,13 @@ function App() {
     }
   }
 
-  const reorderManual = async (manual, offset) => {
+  const reorderManual = async (manual, targetIndex) => {
     if (!isManualAdmin || manualOrderBusy) return
     const ordered = [...manuals].sort((left, right) => (left.sort_order ?? 0) - (right.sort_order ?? 0))
     const currentIndex = ordered.findIndex((item) => item.id === manual.id)
-    const targetIndex = currentIndex + offset
-    if (currentIndex < 0 || targetIndex < 0 || targetIndex >= ordered.length) return
-    const currentManual = ordered[currentIndex]
-    ordered[currentIndex] = ordered[targetIndex]
-    ordered[targetIndex] = currentManual
+    if (currentIndex < 0 || targetIndex < 0 || targetIndex >= ordered.length || currentIndex === targetIndex) return
+    const [movingManual] = ordered.splice(currentIndex, 1)
+    ordered.splice(targetIndex, 0, movingManual)
     setManualOrderBusy(true)
     try {
       const { error } = await supabase.rpc('reorder_rc_manuals', {
@@ -857,13 +862,14 @@ function App() {
   return (
     <div className="app-shell">
       <header className="site-header">
-        <a className="brand" href="#" onClick={(event) => { event.preventDefault(); setPage('market') }}>
+        <a className="brand" href="#" onClick={(event) => { event.preventDefault(); setPage('manuals') }}>
           <span className="brand-mark"><span /><span /><span /></span>
           <span className="brand-name">RC帮<span className="brand-dot">.</span></span>
+          <span className="brand-caption">希望有帮到你！</span>
         </a>
         <nav className="main-nav" aria-label="主导航">
-          <button className={page === 'market' ? 'nav-link active' : 'nav-link'} onClick={() => setPage('market')}>逛集市</button>
           <button className={page === 'manuals' || page === 'manual-admin' ? 'nav-link active' : 'nav-link'} onClick={() => setPage('manuals')}>说明书</button>
+          <button className={page === 'market' ? 'nav-link active' : 'nav-link'} onClick={() => setPage('market')}>闲置集市</button>
           <button className={page === 'gallery' ? 'nav-link active' : 'nav-link'} onClick={() => setPage('gallery')}>靓图欣赏</button>
         </nav>
         <div className="header-actions">
@@ -940,23 +946,34 @@ function App() {
           <section className="manuals-page">
             <div className="manuals-heading">
               <div>
-                <span className="section-kicker">RC MANUALS</span>
-                <h1>说明书共享</h1>
-                <p>整理常用说明、图纸和文档，方便车友随时查阅。</p>
+                <span className="section-kicker">RC INFORMATION HUB</span>
+                <h1>RC 说明书与资料库</h1>
+                <p>聚合主流车型说明书、车友靓图与闲置好物，希望有帮到你！</p>
               </div>
               {isManualAdmin && <button className="button button-outline" onClick={() => setPage('manual-admin')}>说明书管理</button>}
             </div>
+            <div className="manual-brand-filters" aria-label="按品牌筛选说明书">
+              {['全部品牌', ...MANUAL_BRANDS].map((brand) => (
+                <button
+                  key={brand}
+                  className={`manual-brand-filter${manualBrand === brand ? ' selected' : ''}`}
+                  onClick={() => setManualBrand(brand)}
+                  aria-pressed={manualBrand === brand}
+                >{brand}</button>
+              ))}
+            </div>
+            <p className="manual-access-hint">部分说明书链接可能需要科学上网才能打开。如遇到无法访问的情况，请在卡片上点击“无法打开？标记”，帮助管理员排查。</p>
             {session && manualAdminError && <div className="manual-report-notice">{manualAdminError} 请在 Supabase 执行 <code>supabase/manual_admin.sql</code>。</div>}
             {manualLoadError && <div className="manual-report-notice">{manualLoadError} 请在 Supabase 执行更新后的 <code>supabase/schema.sql</code> 以迁移说明书状态、品牌和排序字段。</div>}
             {manualReportError && <div className="manual-report-notice">{manualReportError} 请在 Supabase 执行 <code>supabase/manual_link_reports.sql</code> 后启用链接标记。</div>}
-            {manuals.filter((manual) => manual.status !== 'unavailable').length === 0 ? (
+            {visibleManuals.length === 0 ? (
               <div className="empty-market manual-empty">
-                <h3>暂时没有可用的说明书</h3>
-                <p>目前还没有已启用的说明书资料。</p>
+                <h3>{manualBrand === '全部品牌' ? '暂时没有可用的说明书' : `${manualBrand} 暂无可用说明书`}</h3>
+                <p>{manualBrand === '全部品牌' ? '目前还没有已启用的说明书资料。' : '试试选择其他品牌，或查看全部品牌。'}</p>
               </div>
             ) : (
               <div className="manual-grid">
-                {manuals.filter((manual) => manual.status !== 'unavailable').map((manual) => <ManualCard
+                {visibleManuals.map((manual) => <ManualCard
                   key={manual.id}
                   item={manual}
                   reportCount={manualReports[manual.id]?.count ?? 0}
@@ -991,7 +1008,18 @@ function App() {
                 ) : (
                   <div className="manual-admin-list">
                     {manuals.map((manual, index) => (
-                      <article className="manual-admin-row" key={manual.id}>
+                      <article
+                        className={`manual-admin-row${draggingManualId === manual.id ? ' is-dragging' : ''}${draggingManualId && draggingManualId !== manual.id ? ' is-drop-target' : ''}`}
+                        key={manual.id}
+                        onDragOver={(event) => event.preventDefault()}
+                        onDrop={(event) => {
+                          event.preventDefault()
+                          const draggedId = event.dataTransfer.getData('text/plain')
+                          setDraggingManualId(null)
+                          const movingManual = manuals.find((item) => item.id === draggedId)
+                          if (movingManual) reorderManual(movingManual, index)
+                        }}
+                      >
                         <span className="manual-admin-order">{String(index + 1).padStart(2, '0')}</span>
                         <img src={manual.cover_url || 'https://images.unsplash.com/photo-1516939884455-1445c8652f83?auto=format&fit=crop&w=240&q=70'} alt="" loading="lazy" />
                         <div className="manual-admin-info">
@@ -999,9 +1027,24 @@ function App() {
                           <span>{manual.brand || '未设置品牌'} · {manual.status === 'unavailable' ? '不可用' : '可用'} · 无法打开 {manualReports[manual.id]?.count ?? 0}</span>
                         </div>
                         <div className="manual-admin-order-controls" aria-label={`调整${manual.title}顺序`}>
-                          <button className="icon-button" onClick={() => reorderManual(manual, -1)} disabled={manualOrderBusy || index === 0} aria-label="上移" title="上移"><ChevronUp size={17} /></button>
-                          <button className="icon-button" onClick={() => reorderManual(manual, 1)} disabled={manualOrderBusy || index === manuals.length - 1} aria-label="下移" title="下移"><ChevronDown size={17} /></button>
+                          <button
+                            className="manual-admin-drag-handle"
+                            draggable={!manualOrderBusy}
+                            onDragStart={(event) => {
+                              event.dataTransfer.effectAllowed = 'move'
+                              event.dataTransfer.setData('text/plain', manual.id)
+                              setDraggingManualId(manual.id)
+                            }}
+                            onDragEnd={() => setDraggingManualId(null)}
+                            aria-label={`拖拽调整${manual.title}顺序`}
+                            title="拖拽排序"
+                          ><GripVertical size={17} /></button>
+                          <button className="button button-outline manual-admin-action manual-admin-step" onClick={() => reorderManual(manual, index - 1)} disabled={manualOrderBusy || index === 0} aria-label="上移" title="上移"><ChevronUp size={15} /></button>
+                          <button className="button button-outline manual-admin-action manual-admin-step" onClick={() => reorderManual(manual, index + 1)} disabled={manualOrderBusy || index === manuals.length - 1} aria-label="下移" title="下移"><ChevronDown size={15} /></button>
+                          <button className="button button-outline manual-admin-action" onClick={() => reorderManual(manual, 0)} disabled={manualOrderBusy || index === 0}>置顶</button>
+                          <button className="button button-outline manual-admin-action" onClick={() => reorderManual(manual, manuals.length - 1)} disabled={manualOrderBusy || index === manuals.length - 1}>置底</button>
                         </div>
+                        <button className="button button-outline manual-admin-action" onClick={() => setPreviewingManual(manual)}><Eye size={13} />预览</button>
                         <button className="button button-outline manual-admin-action" onClick={() => { setEditingManual(manual); setManualOpen(true) }}>编辑</button>
                         <button className="button button-outline manual-admin-action" onClick={() => resetManualReports(manual)}>清零反馈</button>
                         <button className="button button-outline delete-control manual-admin-action" onClick={() => removeManual(manual)}>删除</button>
@@ -1074,8 +1117,9 @@ function App() {
         )}
       </main>
       <footer className="disclaimer-banner">
-        <strong>交易提醒</strong>
-        <p>RC帮仅作为群友闲置信息的整合展示平台，不参与、不担保任何交易。交易前请仔细核实商品信息和卖家身份，谨慎交易，注意资金与个人信息安全。</p>
+        {page === 'market'
+          ? <><strong>交易提醒</strong><p>RC帮仅作为群友闲置信息的整合展示平台，不参与、不担保任何交易。交易前请仔细核实商品信息和卖家身份，谨慎交易，注意资金与个人信息安全。</p></>
+          : <><strong>希望有帮到你！</strong><p>这里汇集车型说明书、车友靓图与闲置好物，让 RC 资料更好找、兴趣更好分享。</p></>}
       </footer>
       {authOpen && <AuthModal onClose={() => setAuthOpen(false)} onSuccess={(message) => { setAuthOpen(false); notify(message) }} />}
       {listingOpen && <ListingModal
@@ -1090,6 +1134,7 @@ function App() {
         onClose={() => { setManualOpen(false); setEditingManual(null) }}
         onSave={saveManual}
       />}
+      {previewingManual && <ManualPreviewModal manual={previewingManual} onClose={() => setPreviewingManual(null)} />}
       {profileOpen && <ProfileModal profile={profile} busy={busy} onClose={() => setProfileOpen(false)} onSave={saveProfile} />}
       {selectedListing && <ListingDetail
         item={selectedListing}
@@ -1275,6 +1320,27 @@ function VoteButtons({ counts, signedIn, onVote }) {
         <ThumbsDown size={13} />{counts?.down ?? 0}
       </button>
     </div>
+  )
+}
+
+function ManualPreviewModal({ manual, onClose }) {
+  return (
+    <ModalFrame onClose={onClose} size="manual-preview-modal">
+      <div className="modal-topline"><span>MANUAL PREVIEW</span><button onClick={onClose} aria-label="关闭"><X size={19} /></button></div>
+      <div className="manual-preview-cover">
+        <img src={manual.cover_url || 'https://images.unsplash.com/photo-1516939884455-1445c8652f83?auto=format&fit=crop&w=800&q=80'} alt={manual.title} />
+      </div>
+      <div className="manual-preview-meta">
+        <span className="manual-tag">{manual.brand || '未设置品牌'}</span>
+        <span className={`manual-status manual-status-${manual.status || 'available'}`}>{manual.status === 'unavailable' ? '不可用' : '可用'}</span>
+        <time>{formatDate(manual.created_at)}</time>
+      </div>
+      <h2 className="manual-preview-title">{manual.title}</h2>
+      <p className="modal-subtitle">这是说明书在展示区中的卡片预览。</p>
+      <button className="button button-primary full-button" onClick={() => window.open(manual.manual_url, '_blank', 'noopener,noreferrer')}>
+        打开说明书链接 <ArrowRight size={16} />
+      </button>
+    </ModalFrame>
   )
 }
 
