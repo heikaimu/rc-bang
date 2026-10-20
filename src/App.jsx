@@ -13,7 +13,7 @@ import { compressImage } from './imageCompression'
 const EMPTY_PROFILE = { nickname: '', wechat_id: '', group_names: [], avatar_url: '' }
 const CATEGORIES = ['全部好物', '整车', '配件', '电装', '工具']
 const RC_GROUPS = ['Radio电波通信交流群', 'UDR', '京商Nsr电单摩托交流群']
-const MANUAL_BRANDS = ['田宫', 'Traxxas', 'Arrma', 'Losi']
+const MANUAL_BRANDS = ['田宫', 'Traxxas', 'Arrma', 'Losi', '京商']
 
 async function usernameToAuthEmail(username) {
   const normalized = username.normalize('NFKC').trim().toLocaleLowerCase('zh-CN')

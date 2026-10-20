@@ -32,7 +32,7 @@ create table if not exists public.manuals (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users (id) on delete cascade,
   title text not null check (char_length(title) between 1 and 80),
-  brand text check (brand is null or brand in ('田宫', 'Traxxas', 'Arrma', 'Losi')),
+  brand text check (brand is null or brand in ('田宫', 'Traxxas', 'Arrma', 'Losi', '京商')),
   cover_url text,
   manual_url text not null check (char_length(manual_url) between 1 and 2048),
   status text not null default 'unavailable' check (status in ('available', 'unavailable')),
@@ -51,7 +51,7 @@ begin
   ) then
     alter table public.manuals
       add column brand text
-      check (brand is null or brand in ('田宫', 'Traxxas', 'Arrma', 'Losi'));
+      check (brand is null or brand in ('田宫', 'Traxxas', 'Arrma', 'Losi', '京商'));
   end if;
   update public.manuals
   set brand = case
@@ -91,6 +91,11 @@ begin
   end if;
 end;
 $$;
+
+alter table public.manuals drop constraint if exists manuals_brand_check;
+alter table public.manuals
+  add constraint manuals_brand_check
+  check (brand is null or brand in ('田宫', 'Traxxas', 'Arrma', 'Losi', '京商'));
 
 create table if not exists public.manual_link_reports (
   id uuid primary key default gen_random_uuid(),

@@ -27,7 +27,7 @@ begin
   ) then
     alter table public.manuals
       add column brand text
-      check (brand is null or brand in ('田宫', 'Traxxas', 'Arrma', 'Losi'));
+      check (brand is null or brand in ('田宫', 'Traxxas', 'Arrma', 'Losi', '京商'));
   end if;
   update public.manuals
   set brand = case
@@ -70,6 +70,11 @@ begin
   end if;
 end;
 $$;
+
+alter table public.manuals drop constraint if exists manuals_brand_check;
+alter table public.manuals
+  add constraint manuals_brand_check
+  check (brand is null or brand in ('田宫', 'Traxxas', 'Arrma', 'Losi', '京商'));
 
 create or replace function public.reorder_rc_manuals(manual_ids uuid[])
 returns void
