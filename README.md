@@ -7,7 +7,7 @@
 1. 安装 Node.js 18 或更高版本。
 2. 安装依赖：`npm install`
 3. 将 `.env.example` 复制为 `.env.local`，填写 Supabase Project URL 和 publishable key。
-4. 在 Supabase Dashboard 的 SQL Editor 中运行 [`supabase/schema.sql`](./supabase/schema.sql)。如果数据库已创建，重新执行此脚本会迁移原有群名字段、添加注册频率限制、说明书状态和赞踩、靓图赞踩，以及头像和闲鱼链接所需字段与 Storage 策略。迁移前已有的说明书会保留为“可用”。
+4. 在 Supabase Dashboard 的 SQL Editor 中运行 [`supabase/schema.sql`](./supabase/schema.sql)。如果数据库已创建，重新执行此脚本会迁移原有群名字段、添加注册频率限制、说明书状态、品牌和排序字段、管理员排序函数、说明书赞踩、靓图赞踩，以及头像和闲鱼链接所需字段与 Storage 策略。迁移前已有的说明书会保留为“可用”。
 5. 若只需增加“靓图欣赏”，运行增量脚本 [`supabase/rc_gallery.sql`](./supabase/rc_gallery.sql)，不会改动现有账号、商品或说明书数据。
 6. 将提供的车型说明书目录导入数据库时，在 Supabase SQL Editor 中运行 [`supabase/import_manual_catalog.sql`](./supabase/import_manual_catalog.sql)。这些记录为公共只读资料，不归属个人账号；脚本可重复执行，不会按相同 PDF 链接重复插入。
 7. 若只需启用说明书链接反馈，在 Supabase SQL Editor 中运行 [`supabase/manual_link_reports.sql`](./supabase/manual_link_reports.sql)。登录用户可对每条说明书标记一次“无法打开”，管理员可清零累计数量。说明书与靓图的赞踩功能需运行 [`supabase/schema.sql`](./supabase/schema.sql) 完成数据表和函数迁移。
@@ -34,7 +34,7 @@
 - 微信昵称 + 密码注册 / 登录、个人联系方式资料维护。
 - 所在群支持多选，可从常用群列表选择或输入其他群名；商品详情会展示卖家所在的全部群聊。
 - 发布时自动带入个人资料中的微信号和所在群；发布、编辑、删除自己的闲置，或设置售卖中 / 已售 / 下架状态；下架商品会从公开集市隐藏。
-- 说明书共享区支持添加“标题 + 封面图 + 链接”，封面可上传并裁剪为 300 × 200 JPEG；管理员可设置“可用 / 不可用”状态，新添加的说明书默认为“不可用”，只有可用说明书对访客展示。
+- 说明书展示页与管理员管理页分离；管理员在独立列表页新增、编辑、删除说明书，设置田宫、Traxxas、Arrma、Losi 品牌和“可用 / 不可用”状态，并手动调整排序。封面可上传并裁剪为 300 × 200 JPEG；新添加的说明书默认为“不可用”，只有可用说明书对访客展示。
 - 仅 MH 管理员可以新增、编辑和删除说明书；普通用户可以查看、标记无法打开并各自对每条说明书投一次赞或踩。管理员可清零无法打开数量。
 - 登录用户可以将无法访问的说明书链接标记一次，卡片展示反馈累计数，方便维护者排查失效或超时链接。
 - 靓图欣赏独立页面展示 RC 美照；每位用户最多上传 10 张，照片会按现有压缩逻辑缩放至 1920 × 1080 边界内并保存为 JPEG，用户可以删除自己的照片，并对每张靓图投一次赞或踩。

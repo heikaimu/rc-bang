@@ -4,8 +4,16 @@ begin;
 
 alter table public.manuals alter column user_id drop not null;
 
-insert into public.manuals (user_id, title, cover_url, manual_url)
-select null, seed.title, seed.cover_url, seed.manual_url
+insert into public.manuals (user_id, title, brand, cover_url, manual_url)
+select null,
+  seed.title,
+  case
+    when seed.title ilike 'Traxxas %' then 'Traxxas'
+    when seed.title ilike 'ARRMA %' then 'Arrma'
+    when seed.title ilike 'Losi %' then 'Losi'
+  end,
+  seed.cover_url,
+  seed.manual_url
 from (values
   ('Traxxas X-Maxx 8S (77086-4)', 'https://images.amainhobbies.com/images/large/tra/tra77086-4-grn.jpg', 'https://www.rmv-deutschland.de/media/hcdownloads/file/x/-/X-Maxx-8s-77086-4-Front-Assembly.pdf'),
   ('Traxxas Maxx (89086-4)', 'https://images.amainhobbies.com/images/large/tra/tra89086-4-ylw.jpg', 'https://www.gearrc.com/pdfmanual/89086-4maxxv2.pdf'),
@@ -41,5 +49,14 @@ from (values
 where not exists (
   select 1 from public.manuals existing where existing.manual_url = seed.manual_url
 );
+
+update public.manuals
+set brand = case
+  when title ilike 'Traxxas %' then 'Traxxas'
+  when title ilike 'ARRMA %' then 'Arrma'
+  when title ilike 'Losi %' then 'Losi'
+end
+where brand is null
+  and (title ilike 'Traxxas %' or title ilike 'ARRMA %' or title ilike 'Losi %');
 
 commit;

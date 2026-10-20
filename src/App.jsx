@@ -2,7 +2,7 @@ import React from 'react'
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import {
   ArrowLeft, ArrowRight, Camera, Check, CircleUserRound,
-  Copy, ImagePlus, LoaderCircle, LogOut, Plus, Search, Settings2,
+  ChevronDown, ChevronUp, Copy, ImagePlus, LoaderCircle, LogOut, Plus, Search, Settings2,
   ShieldCheck, SlidersHorizontal, ThumbsDown, ThumbsUp, Trash2, X,
 } from 'lucide-react'
 import Cropper from 'cropperjs'
@@ -13,6 +13,7 @@ import { compressImage } from './imageCompression'
 const EMPTY_PROFILE = { nickname: '', wechat_id: '', group_names: [], avatar_url: '' }
 const CATEGORIES = ['全部好物', '整车', '配件', '电装', '工具']
 const RC_GROUPS = ['Radio电波通信交流群', 'UDR', '京商Nsr电单摩托交流群']
+const MANUAL_BRANDS = ['田宫', 'Traxxas', 'Arrma', 'Losi']
 
 async function usernameToAuthEmail(username) {
   const normalized = username.normalize('NFKC').trim().toLocaleLowerCase('zh-CN')
@@ -229,6 +230,7 @@ function App() {
   const [profileOpen, setProfileOpen] = useState(false)
   const [notice, setNotice] = useState(null)
   const [busy, setBusy] = useState(false)
+  const [manualOrderBusy, setManualOrderBusy] = useState(false)
   const [uploadingPhotos, setUploadingPhotos] = useState(false)
   const [loading, setLoading] = useState(true)
   const configured = Boolean(supabase)
@@ -259,7 +261,8 @@ function App() {
       return
     }
     const { data, error } = await supabase.from('manuals')
-      .select('id, user_id, title, cover_url, manual_url, status, created_at, updated_at')
+      .select('id, user_id, title, brand, cover_url, manual_url, status, sort_order, created_at, updated_at')
+      .order('sort_order', { ascending: true })
       .order('created_at', { ascending: false })
     if (error) {
       console.warn('Manuals query failed:', error.message)
@@ -538,9 +541,11 @@ function App() {
       }
       const payload = {
         title: manual.title.trim(),
+        brand: manual.brand,
         cover_url: coverUrl,
         manual_url: manual.manual_url.trim(),
         status: manual.status,
+        sort_order: editingManual?.sort_order ?? (manuals.reduce((max, item) => Math.max(max, item.sort_order ?? -1), -1) + 1),
         user_id: session.user.id,
       }
       const result = editingManual
@@ -580,6 +585,29 @@ function App() {
       notify('说明书已删除')
     } catch (error) {
       notify(`删除说明书失败：${error.message}`, 'error')
+    }
+  }
+
+  const reorderManual = async (manual, offset) => {
+    if (!isManualAdmin || manualOrderBusy) return
+    const ordered = [...manuals].sort((left, right) => (left.sort_order ?? 0) - (right.sort_order ?? 0))
+    const currentIndex = ordered.findIndex((item) => item.id === manual.id)
+    const targetIndex = currentIndex + offset
+    if (currentIndex < 0 || targetIndex < 0 || targetIndex >= ordered.length) return
+    const currentManual = ordered[currentIndex]
+    ordered[currentIndex] = ordered[targetIndex]
+    ordered[targetIndex] = currentManual
+    setManualOrderBusy(true)
+    try {
+      const { error } = await supabase.rpc('reorder_rc_manuals', {
+        manual_ids: ordered.map((item) => item.id),
+      })
+      if (error) throw error
+      await loadManuals()
+    } catch (error) {
+      notify(`调整说明书顺序失败：${error.message}`, 'error')
+    } finally {
+      setManualOrderBusy(false)
     }
   }
 
@@ -835,7 +863,7 @@ function App() {
         </a>
         <nav className="main-nav" aria-label="主导航">
           <button className={page === 'market' ? 'nav-link active' : 'nav-link'} onClick={() => setPage('market')}>逛集市</button>
-          <button className={page === 'manuals' ? 'nav-link active' : 'nav-link'} onClick={() => setPage('manuals')}>说明书</button>
+          <button className={page === 'manuals' || page === 'manual-admin' ? 'nav-link active' : 'nav-link'} onClick={() => setPage('manuals')}>说明书</button>
           <button className={page === 'gallery' ? 'nav-link active' : 'nav-link'} onClick={() => setPage('gallery')}>靓图欣赏</button>
         </nav>
         <div className="header-actions">
@@ -916,33 +944,77 @@ function App() {
                 <h1>说明书共享</h1>
                 <p>整理常用说明、图纸和文档，方便车友随时查阅。</p>
               </div>
-              {isManualAdmin && <button className="button button-outline" onClick={openManualCreate}>发布说明书</button>}
+              {isManualAdmin && <button className="button button-outline" onClick={() => setPage('manual-admin')}>说明书管理</button>}
             </div>
             {session && manualAdminError && <div className="manual-report-notice">{manualAdminError} 请在 Supabase 执行 <code>supabase/manual_admin.sql</code>。</div>}
-            {manualLoadError && <div className="manual-report-notice">{manualLoadError} 请在 Supabase 执行 <code>supabase/schema.sql</code> 以迁移说明书状态字段。</div>}
+            {manualLoadError && <div className="manual-report-notice">{manualLoadError} 请在 Supabase 执行更新后的 <code>supabase/schema.sql</code> 以迁移说明书状态、品牌和排序字段。</div>}
             {manualReportError && <div className="manual-report-notice">{manualReportError} 请在 Supabase 执行 <code>supabase/manual_link_reports.sql</code> 后启用链接标记。</div>}
-            {manuals.filter((manual) => isManualAdmin || manual.status !== 'unavailable').length === 0 ? (
+            {manuals.filter((manual) => manual.status !== 'unavailable').length === 0 ? (
               <div className="empty-market manual-empty">
-                <h3>还没有说明书资料</h3>
-                <p>分享装车、调参、保养说明或其他 RC 相关文档。</p>
+                <h3>暂时没有可用的说明书</h3>
+                <p>目前还没有已启用的说明书资料。</p>
               </div>
             ) : (
               <div className="manual-grid">
-                {manuals.filter((manual) => isManualAdmin || manual.status !== 'unavailable').map((manual) => <ManualCard
+                {manuals.filter((manual) => manual.status !== 'unavailable').map((manual) => <ManualCard
                   key={manual.id}
                   item={manual}
-                  allowManage={isManualAdmin}
-                  onEdit={() => { setEditingManual(manual); setManualOpen(true) }}
-                  onDelete={() => removeManual(manual)}
                   reportCount={manualReports[manual.id]?.count ?? 0}
                   reportedByMe={manualReports[manual.id]?.reportedByMe ?? false}
                   voteCounts={manualVotes[manual.id]}
                   signedIn={Boolean(session)}
                   onReport={() => reportManualUnavailable(manual)}
-                  onResetReports={() => resetManualReports(manual)}
                   onVote={(vote) => voteManual(manual, vote)}
-                  isManualAdmin={isManualAdmin}
                 />)}
+              </div>
+            )}
+          </section>
+        ) : page === 'manual-admin' ? (
+          <section className="manuals-page manual-admin-page">
+            {isManualAdmin ? (
+              <>
+                <div className="manuals-heading">
+                  <div>
+                    <span className="section-kicker">RC MANUALS / ADMIN</span>
+                    <h1>说明书管理</h1>
+                    <p>单独管理说明书资料、品牌、状态及展示顺序。</p>
+                  </div>
+                  <div className="manual-admin-heading-actions">
+                    <button className="button button-outline" onClick={() => setPage('manuals')}>返回说明书</button>
+                    <button className="button button-primary" onClick={openManualCreate}><Plus size={15} />新增说明书</button>
+                  </div>
+                </div>
+                {manualAdminError && <div className="manual-report-notice">{manualAdminError}</div>}
+                {manualLoadError && <div className="manual-report-notice">{manualLoadError} 请在 Supabase 执行更新后的 <code>supabase/schema.sql</code>。</div>}
+                {manuals.length === 0 ? (
+                  <div className="empty-market manual-empty"><h3>还没有说明书资料</h3><p>点击“新增说明书”添加第一份资料。</p></div>
+                ) : (
+                  <div className="manual-admin-list">
+                    {manuals.map((manual, index) => (
+                      <article className="manual-admin-row" key={manual.id}>
+                        <span className="manual-admin-order">{String(index + 1).padStart(2, '0')}</span>
+                        <img src={manual.cover_url || 'https://images.unsplash.com/photo-1516939884455-1445c8652f83?auto=format&fit=crop&w=240&q=70'} alt="" loading="lazy" />
+                        <div className="manual-admin-info">
+                          <b>{manual.title}</b>
+                          <span>{manual.brand || '未设置品牌'} · {manual.status === 'unavailable' ? '不可用' : '可用'} · 无法打开 {manualReports[manual.id]?.count ?? 0}</span>
+                        </div>
+                        <div className="manual-admin-order-controls" aria-label={`调整${manual.title}顺序`}>
+                          <button className="icon-button" onClick={() => reorderManual(manual, -1)} disabled={manualOrderBusy || index === 0} aria-label="上移" title="上移"><ChevronUp size={17} /></button>
+                          <button className="icon-button" onClick={() => reorderManual(manual, 1)} disabled={manualOrderBusy || index === manuals.length - 1} aria-label="下移" title="下移"><ChevronDown size={17} /></button>
+                        </div>
+                        <button className="button button-outline manual-admin-action" onClick={() => { setEditingManual(manual); setManualOpen(true) }}>编辑</button>
+                        <button className="button button-outline manual-admin-action" onClick={() => resetManualReports(manual)}>清零反馈</button>
+                        <button className="button button-outline delete-control manual-admin-action" onClick={() => removeManual(manual)}>删除</button>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="empty-market manual-empty">
+                <h3>仅管理员可管理说明书</h3>
+                <p>普通用户可以浏览说明书共享区。</p>
+                <button className="button button-outline" onClick={() => setPage('manuals')}>返回说明书</button>
               </div>
             )}
           </section>
@@ -1164,7 +1236,7 @@ function AuthModal({ onClose, onSuccess }) {
   )
 }
 
-function ManualCard({ item, allowManage = false, onEdit, onDelete, reportCount = 0, reportedByMe = false, voteCounts, signedIn = false, onReport, onResetReports, onVote, isManualAdmin = false }) {
+function ManualCard({ item, reportCount = 0, reportedByMe = false, voteCounts, signedIn = false, onReport, onVote }) {
   const openLink = () => window.open(item.manual_url, '_blank', 'noopener,noreferrer')
   return (
     <article className="manual-card">
@@ -1173,8 +1245,7 @@ function ManualCard({ item, allowManage = false, onEdit, onDelete, reportCount =
       </button>
       <div className="manual-body">
         <div className="manual-meta">
-          <span className="manual-tag">说明书</span>
-          {allowManage && <span className={`manual-status manual-status-${item.status || 'available'}`}>{item.status === 'unavailable' ? '不可用' : '可用'}</span>}
+          <span className="manual-tag">{item.brand || '未设置品牌'}</span>
           <time>{formatDate(item.created_at)}</time>
         </div>
         <h3>{item.title}</h3>
@@ -1187,13 +1258,6 @@ function ManualCard({ item, allowManage = false, onEdit, onDelete, reportCount =
         >
           <X size={13} />{reportedByMe ? '你已标记无法打开' : signedIn ? '无法打开？标记' : '登录后标记无法打开'}<span>{reportCount}</span>
         </button>
-        {allowManage && (
-          <div className="manual-actions">
-            <button className="button button-outline" onClick={onEdit}>编辑</button>
-            <button className="button button-outline delete-control" onClick={onDelete}>删除</button>
-          </div>
-        )}
-        {isManualAdmin && <button className="manual-report-reset" onClick={onResetReports}>清零无法打开数量</button>}
         <VoteButtons counts={voteCounts} signedIn={signedIn} onVote={onVote} />
       </div>
     </article>
@@ -1216,6 +1280,7 @@ function VoteButtons({ counts, signedIn, onVote }) {
 
 function ManualModal({ manual, busy, onClose, onSave }) {
   const [title, setTitle] = useState(manual?.title ?? '')
+  const [brand, setBrand] = useState(manual?.brand ?? '')
   const [manualUrl, setManualUrl] = useState(manual?.manual_url ?? '')
   const [status, setStatus] = useState(manual ? manual.status ?? 'available' : 'unavailable')
   const [coverSource, setCoverSource] = useState('')
@@ -1269,6 +1334,10 @@ function ManualModal({ manual, busy, onClose, onSave }) {
       setError('标题和链接不能为空。')
       return
     }
+    if (!MANUAL_BRANDS.includes(brand)) {
+      setError('请选择说明书品牌。')
+      return
+    }
     if (!coverSource && !manual?.cover_url) {
       setError('请上传说明书封面图。')
       return
@@ -1298,6 +1367,7 @@ function ManualModal({ manual, busy, onClose, onSave }) {
       setError('')
       onSave({
         title: normalizedTitle,
+        brand,
         cover_url: manual?.cover_url ?? null,
         cover_blob: coverBlob,
         manual_url: normalizedManual,
@@ -1316,6 +1386,7 @@ function ManualModal({ manual, busy, onClose, onSave }) {
       <p className="modal-subtitle">拖动调整封面裁剪范围，保存为 300 × 200 JPEG。</p>
       <form className="form-stack listing-form" onSubmit={submit}>
         <label>标题<input required maxLength="80" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="例如：SCX10 III 组装说明书" /></label>
+        <label>品牌<select required value={brand} onChange={(event) => setBrand(event.target.value)}><option value="" disabled>请选择品牌</option>{MANUAL_BRANDS.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
         <div className="manual-cover-field">
           <span className="form-section-label">封面图 {manual?.cover_url && !coverSource && <span>已有封面，上传新图可替换</span>}</span>
           <label className="button button-outline avatar-upload-button manual-cover-upload"><Camera size={15} />{coverSource || manual?.cover_url ? '更换封面图' : '上传封面图'}<input type="file" accept="image/*" onChange={chooseCover} /></label>
