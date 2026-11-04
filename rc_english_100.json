@@ -1,0 +1,902 @@
+[
+  {
+    "id": 1,
+    "word": "Chassis",
+    "ipa": "/ˈtʃæsi/",
+    "meaning": "底盘",
+    "category": "parts",
+    "example": "Check the chassis before driving.",
+    "translation": "驾驶前检查底盘。"
+  },
+  {
+    "id": 2,
+    "word": "Suspension",
+    "ipa": "/səˈspenʃən/",
+    "meaning": "悬挂系统",
+    "category": "parts",
+    "example": "Adjust the suspension for better handling.",
+    "translation": "调整悬挂以改善操控。"
+  },
+  {
+    "id": 3,
+    "word": "Shock",
+    "ipa": "/ʃɑːk/",
+    "meaning": "避震器",
+    "category": "parts",
+    "example": "Check the shock before driving.",
+    "translation": "驾驶前检查避震器。"
+  },
+  {
+    "id": 4,
+    "word": "Spring",
+    "ipa": "/sprɪŋ/",
+    "meaning": "弹簧",
+    "category": "parts",
+    "example": "Check the spring before driving.",
+    "translation": "驾驶前检查弹簧。"
+  },
+  {
+    "id": 5,
+    "word": "Damper",
+    "ipa": "/ˈdæmpɚ/",
+    "meaning": "阻尼器",
+    "category": "parts",
+    "example": "Check the damper before driving.",
+    "translation": "驾驶前检查阻尼器。"
+  },
+  {
+    "id": 6,
+    "word": "Arm",
+    "ipa": "/ɑːrm/",
+    "meaning": "摆臂",
+    "category": "parts",
+    "example": "Check the arm before driving.",
+    "translation": "驾驶前检查摆臂。"
+  },
+  {
+    "id": 7,
+    "word": "Steering",
+    "ipa": "/ˈstɪrɪŋ/",
+    "meaning": "转向",
+    "category": "parts",
+    "example": "Check the steering before driving.",
+    "translation": "驾驶前检查转向。"
+  },
+  {
+    "id": 8,
+    "word": "Servo",
+    "ipa": "/ˈsɝːvoʊ/",
+    "meaning": "舵机",
+    "category": "parts",
+    "example": "Replace the steering servo.",
+    "translation": "更换转向舵机。"
+  },
+  {
+    "id": 9,
+    "word": "Linkage",
+    "ipa": "/ˈlɪŋkɪdʒ/",
+    "meaning": "连杆机构",
+    "category": "parts",
+    "example": "Check the linkage before driving.",
+    "translation": "驾驶前检查连杆机构。"
+  },
+  {
+    "id": 10,
+    "word": "Tie rod",
+    "ipa": "/ˈtaɪ rɑːd/",
+    "meaning": "转向拉杆",
+    "category": "parts",
+    "example": "Check the tie rod before driving.",
+    "translation": "驾驶前检查转向拉杆。"
+  },
+  {
+    "id": 11,
+    "word": "Bearing",
+    "ipa": "/ˈberɪŋ/",
+    "meaning": "轴承",
+    "category": "parts",
+    "example": "Check the bearing before driving.",
+    "translation": "驾驶前检查轴承。"
+  },
+  {
+    "id": 12,
+    "word": "Bushing",
+    "ipa": "/ˈbʊʃɪŋ/",
+    "meaning": "衬套",
+    "category": "parts",
+    "example": "Check the bushing before driving.",
+    "translation": "驾驶前检查衬套。"
+  },
+  {
+    "id": 13,
+    "word": "Hub",
+    "ipa": "/hʌb/",
+    "meaning": "轮毂座/轮毂",
+    "category": "parts",
+    "example": "Check the hub before driving.",
+    "translation": "驾驶前检查轮毂座。"
+  },
+  {
+    "id": 14,
+    "word": "Knuckle",
+    "ipa": "/ˈnʌkəl/",
+    "meaning": "转向节",
+    "category": "parts",
+    "example": "Check the knuckle before driving.",
+    "translation": "驾驶前检查转向节。"
+  },
+  {
+    "id": 15,
+    "word": "Axle",
+    "ipa": "/ˈæksəl/",
+    "meaning": "车轴/半轴",
+    "category": "parts",
+    "example": "Check the axle before driving.",
+    "translation": "驾驶前检查车轴。"
+  },
+  {
+    "id": 16,
+    "word": "Driveshaft",
+    "ipa": "/ˈdraɪvʃæft/",
+    "meaning": "传动轴",
+    "category": "parts",
+    "example": "Check the driveshaft before driving.",
+    "translation": "驾驶前检查传动轴。"
+  },
+  {
+    "id": 17,
+    "word": "Differential",
+    "ipa": "/ˌdɪfəˈrenʃəl/",
+    "meaning": "差速器",
+    "category": "parts",
+    "example": "Check the rear differential for damage.",
+    "translation": "检查后差速器是否损坏。"
+  },
+  {
+    "id": 18,
+    "word": "Gear",
+    "ipa": "/ɡɪr/",
+    "meaning": "齿轮",
+    "category": "parts",
+    "example": "Check the gear before driving.",
+    "translation": "驾驶前检查齿轮。"
+  },
+  {
+    "id": 19,
+    "word": "Pinion",
+    "ipa": "/ˈpɪnjən/",
+    "meaning": "小齿轮",
+    "category": "parts",
+    "example": "Check the pinion before driving.",
+    "translation": "驾驶前检查小齿轮。"
+  },
+  {
+    "id": 20,
+    "word": "Spur gear",
+    "ipa": "/spɝː ɡɪr/",
+    "meaning": "大齿轮",
+    "category": "parts",
+    "example": "Check the spur gear before driving.",
+    "translation": "驾驶前检查大齿轮。"
+  },
+  {
+    "id": 21,
+    "word": "Sway bar",
+    "ipa": "/ˈsweɪ bɑːr/",
+    "meaning": "防倾杆",
+    "category": "parts",
+    "example": "Install a stiffer sway bar to reduce body roll.",
+    "translation": "安装更硬的防倾杆以减少侧倾。"
+  },
+  {
+    "id": 22,
+    "word": "Wheel",
+    "ipa": "/wiːl/",
+    "meaning": "车轮",
+    "category": "parts",
+    "example": "Check the wheel before driving.",
+    "translation": "驾驶前检查车轮。"
+  },
+  {
+    "id": 23,
+    "word": "Tire",
+    "ipa": "/ˈtaɪɚ/",
+    "meaning": "轮胎",
+    "category": "parts",
+    "example": "Check the tire before driving.",
+    "translation": "驾驶前检查轮胎。"
+  },
+  {
+    "id": 24,
+    "word": "Body",
+    "ipa": "/ˈbɑːdi/",
+    "meaning": "车壳",
+    "category": "parts",
+    "example": "Check the body before driving.",
+    "translation": "驾驶前检查车壳。"
+  },
+  {
+    "id": 25,
+    "word": "Bumper",
+    "ipa": "/ˈbʌmpɚ/",
+    "meaning": "保险杠",
+    "category": "parts",
+    "example": "Check the bumper before driving.",
+    "translation": "驾驶前检查保险杠。"
+  },
+  {
+    "id": 26,
+    "word": "Motor",
+    "ipa": "/ˈmoʊtɚ/",
+    "meaning": "电机",
+    "category": "electronics",
+    "example": "Check the motor before driving.",
+    "translation": "驾驶前检查电机。"
+  },
+  {
+    "id": 27,
+    "word": "Brushless",
+    "ipa": "/ˈbrʌʃləs/",
+    "meaning": "无刷的",
+    "category": "electronics",
+    "example": "This truck uses a brushless motor.",
+    "translation": "这辆车使用无刷电机。"
+  },
+  {
+    "id": 28,
+    "word": "Brushed",
+    "ipa": "/brʌʃt/",
+    "meaning": "有刷的",
+    "category": "electronics",
+    "example": "This truck uses a brushed motor.",
+    "translation": "这辆车使用有刷电机。"
+  },
+  {
+    "id": 29,
+    "word": "Sensored",
+    "ipa": "/ˈsen sɚd/",
+    "meaning": "有感的",
+    "category": "electronics",
+    "example": "A sensored motor improves low-speed control.",
+    "translation": "有感电机改善低速控制。"
+  },
+  {
+    "id": 30,
+    "word": "Sensorless",
+    "ipa": "/ˈsensɚləs/",
+    "meaning": "无感的",
+    "category": "electronics",
+    "example": "This ESC supports sensorless motors.",
+    "translation": "这款电调支持无感电机。"
+  },
+  {
+    "id": 31,
+    "word": "ESC",
+    "ipa": "/ˌiː es ˈsiː/",
+    "meaning": "电子调速器",
+    "category": "electronics",
+    "example": "Calibrate the ESC before driving.",
+    "translation": "驾驶前校准电调。"
+  },
+  {
+    "id": 32,
+    "word": "Receiver",
+    "ipa": "/rɪˈsiːvɚ/",
+    "meaning": "接收器",
+    "category": "electronics",
+    "example": "Check the receiver before driving.",
+    "translation": "驾驶前检查接收器。"
+  },
+  {
+    "id": 33,
+    "word": "Transmitter",
+    "ipa": "/trænzˈmɪtɚ/",
+    "meaning": "发射器/遥控器",
+    "category": "electronics",
+    "example": "Check the transmitter before driving.",
+    "translation": "驾驶前检查发射器。"
+  },
+  {
+    "id": 34,
+    "word": "Battery",
+    "ipa": "/ˈbætəri/",
+    "meaning": "电池",
+    "category": "electronics",
+    "example": "Check the battery before driving.",
+    "translation": "驾驶前检查电池。"
+  },
+  {
+    "id": 35,
+    "word": "Voltage",
+    "ipa": "/ˈvoʊltɪdʒ/",
+    "meaning": "电压",
+    "category": "electronics",
+    "example": "Check the battery voltage.",
+    "translation": "检查电池电压。"
+  },
+  {
+    "id": 36,
+    "word": "Current",
+    "ipa": "/ˈkɝːənt/",
+    "meaning": "电流",
+    "category": "electronics",
+    "example": "Monitor the motor current.",
+    "translation": "监测电机电流。"
+  },
+  {
+    "id": 37,
+    "word": "Capacity",
+    "ipa": "/kəˈpæsəti/",
+    "meaning": "容量",
+    "category": "electronics",
+    "example": "Check the battery capacity.",
+    "translation": "检查电池容量。"
+  },
+  {
+    "id": 38,
+    "word": "Connector",
+    "ipa": "/kəˈnektɚ/",
+    "meaning": "接头",
+    "category": "electronics",
+    "example": "Check the connector before driving.",
+    "translation": "驾驶前检查接头。"
+  },
+  {
+    "id": 39,
+    "word": "Throttle",
+    "ipa": "/ˈθrɑːtəl/",
+    "meaning": "油门",
+    "category": "electronics",
+    "example": "Apply throttle smoothly.",
+    "translation": "平稳地给油门。"
+  },
+  {
+    "id": 40,
+    "word": "Brake",
+    "ipa": "/breɪk/",
+    "meaning": "刹车",
+    "category": "electronics",
+    "example": "Adjust the brake force.",
+    "translation": "调整刹车力度。"
+  },
+  {
+    "id": 41,
+    "word": "Reverse",
+    "ipa": "/rɪˈvɝːs/",
+    "meaning": "倒车",
+    "category": "electronics",
+    "example": "Enable reverse in the ESC settings.",
+    "translation": "在电调设置中开启倒车。"
+  },
+  {
+    "id": 42,
+    "word": "BEC",
+    "ipa": "/ˌbiː iː ˈsiː/",
+    "meaning": "稳压供电模块",
+    "category": "electronics",
+    "example": "Check the bec before driving.",
+    "translation": "驾驶前检查稳压供电模块。"
+  },
+  {
+    "id": 43,
+    "word": "Gyro",
+    "ipa": "/ˈdʒaɪroʊ/",
+    "meaning": "陀螺仪",
+    "category": "electronics",
+    "example": "Check the gyro before driving.",
+    "translation": "驾驶前检查陀螺仪。"
+  },
+  {
+    "id": 44,
+    "word": "Calibration",
+    "ipa": "/ˌkælɪˈbreɪʃən/",
+    "meaning": "校准",
+    "category": "electronics",
+    "example": "Complete throttle calibration.",
+    "translation": "完成油门校准。"
+  },
+  {
+    "id": 45,
+    "word": "Firmware",
+    "ipa": "/ˈfɝːmwer/",
+    "meaning": "固件",
+    "category": "electronics",
+    "example": "Update the ESC firmware.",
+    "translation": "更新电调固件。"
+  },
+  {
+    "id": 46,
+    "word": "Handling",
+    "ipa": "/ˈhændlɪŋ/",
+    "meaning": "操控表现",
+    "category": "handling",
+    "example": "This setup affects handling.",
+    "translation": "这套调校会影响操控表现。"
+  },
+  {
+    "id": 47,
+    "word": "Stability",
+    "ipa": "/stəˈbɪləti/",
+    "meaning": "稳定性",
+    "category": "handling",
+    "example": "This setup affects stability.",
+    "translation": "这套调校会影响稳定性。"
+  },
+  {
+    "id": 48,
+    "word": "Traction",
+    "ipa": "/ˈtrækʃən/",
+    "meaning": "牵引力/抓地能力",
+    "category": "handling",
+    "example": "This setup affects traction.",
+    "translation": "这套调校会影响牵引力。"
+  },
+  {
+    "id": 49,
+    "word": "Grip",
+    "ipa": "/ɡrɪp/",
+    "meaning": "抓地力",
+    "category": "handling",
+    "example": "This setup affects grip.",
+    "translation": "这套调校会影响抓地力。"
+  },
+  {
+    "id": 50,
+    "word": "Wheelie",
+    "ipa": "/ˈwiːli/",
+    "meaning": "抬头/翘头",
+    "category": "handling",
+    "example": "The LMT can do a wheelie on high-grip pavement.",
+    "translation": "LMT 可以在高抓地铺装路面抬头。"
+  },
+  {
+    "id": 51,
+    "word": "Rollover",
+    "ipa": "/ˈroʊloʊvɚ/",
+    "meaning": "侧翻",
+    "category": "handling",
+    "example": "This setup affects rollover.",
+    "translation": "这套调校会影响侧翻。"
+  },
+  {
+    "id": 52,
+    "word": "Body roll",
+    "ipa": "/ˈbɑːdi roʊl/",
+    "meaning": "车身侧倾",
+    "category": "handling",
+    "example": "Reduce body roll in corners.",
+    "translation": "减少过弯时的车身侧倾。"
+  },
+  {
+    "id": 53,
+    "word": "Jump",
+    "ipa": "/dʒʌmp/",
+    "meaning": "跳跃",
+    "category": "handling",
+    "example": "This setup affects jump.",
+    "translation": "这套调校会影响跳跃。"
+  },
+  {
+    "id": 54,
+    "word": "Landing",
+    "ipa": "/ˈlændɪŋ/",
+    "meaning": "落地",
+    "category": "handling",
+    "example": "This setup affects landing.",
+    "translation": "这套调校会影响落地。"
+  },
+  {
+    "id": 55,
+    "word": "Bounce",
+    "ipa": "/baʊns/",
+    "meaning": "弹跳/回弹",
+    "category": "handling",
+    "example": "This setup affects bounce.",
+    "translation": "这套调校会影响弹跳。"
+  },
+  {
+    "id": 56,
+    "word": "Rebound",
+    "ipa": "/riːˈbaʊnd/",
+    "meaning": "回弹",
+    "category": "handling",
+    "example": "This setup affects rebound.",
+    "translation": "这套调校会影响回弹。"
+  },
+  {
+    "id": 57,
+    "word": "Compression",
+    "ipa": "/kəmˈpreʃən/",
+    "meaning": "压缩",
+    "category": "handling",
+    "example": "This setup affects compression.",
+    "translation": "这套调校会影响压缩。"
+  },
+  {
+    "id": 58,
+    "word": "Damping",
+    "ipa": "/ˈdæmpɪŋ/",
+    "meaning": "阻尼",
+    "category": "handling",
+    "example": "This setup affects damping.",
+    "translation": "这套调校会影响阻尼。"
+  },
+  {
+    "id": 59,
+    "word": "Stiffness",
+    "ipa": "/ˈstɪfnəs/",
+    "meaning": "刚度",
+    "category": "handling",
+    "example": "This setup affects stiffness.",
+    "translation": "这套调校会影响刚度。"
+  },
+  {
+    "id": 60,
+    "word": "Clearance",
+    "ipa": "/ˈklɪrəns/",
+    "meaning": "离地间隙",
+    "category": "handling",
+    "example": "This setup affects clearance.",
+    "translation": "这套调校会影响离地间隙。"
+  },
+  {
+    "id": 61,
+    "word": "Ride height",
+    "ipa": "/ˈraɪd haɪt/",
+    "meaning": "车身高度",
+    "category": "handling",
+    "example": "Adjust the ride height.",
+    "translation": "调整车身高度。"
+  },
+  {
+    "id": 62,
+    "word": "Droop",
+    "ipa": "/druːp/",
+    "meaning": "悬挂下垂行程",
+    "category": "handling",
+    "example": "Limit straps reduce suspension droop.",
+    "translation": "限位带可减少悬挂下垂行程。"
+  },
+  {
+    "id": 63,
+    "word": "Travel",
+    "ipa": "/ˈtrævəl/",
+    "meaning": "行程",
+    "category": "handling",
+    "example": "This setup affects travel.",
+    "translation": "这套调校会影响行程。"
+  },
+  {
+    "id": 64,
+    "word": "Camber",
+    "ipa": "/ˈkæmbɚ/",
+    "meaning": "外倾角",
+    "category": "handling",
+    "example": "This setup affects camber.",
+    "translation": "这套调校会影响外倾角。"
+  },
+  {
+    "id": 65,
+    "word": "Toe",
+    "ipa": "/toʊ/",
+    "meaning": "前束角",
+    "category": "handling",
+    "example": "Adjust the front toe angle.",
+    "translation": "调整前轮前束角。"
+  },
+  {
+    "id": 66,
+    "word": "Gear ratio",
+    "ipa": "/ɡɪr ˈreɪʃioʊ/",
+    "meaning": "齿比",
+    "category": "handling",
+    "example": "Change the gear ratio for more torque.",
+    "translation": "改变齿比以获得更大扭矩。"
+  },
+  {
+    "id": 67,
+    "word": "Understeer",
+    "ipa": "/ˈʌndɚstɪr/",
+    "meaning": "转向不足/推头",
+    "category": "handling",
+    "example": "This setup affects understeer.",
+    "translation": "这套调校会影响转向不足。"
+  },
+  {
+    "id": 68,
+    "word": "Oversteer",
+    "ipa": "/ˈoʊvɚstɪr/",
+    "meaning": "转向过度/甩尾",
+    "category": "handling",
+    "example": "This setup affects oversteer.",
+    "translation": "这套调校会影响转向过度。"
+  },
+  {
+    "id": 69,
+    "word": "Acceleration",
+    "ipa": "/əkˌseləˈreɪʃən/",
+    "meaning": "加速",
+    "category": "handling",
+    "example": "This setup affects acceleration.",
+    "translation": "这套调校会影响加速。"
+  },
+  {
+    "id": 70,
+    "word": "Top speed",
+    "ipa": "/tɑːp spiːd/",
+    "meaning": "最高速度",
+    "category": "handling",
+    "example": "Measure the top speed.",
+    "translation": "测量最高速度。"
+  },
+  {
+    "id": 71,
+    "word": "Install",
+    "ipa": "/ɪnˈstɔːl/",
+    "meaning": "安装",
+    "category": "maintenance",
+    "example": "Install the part as instructed.",
+    "translation": "按照说明对零件进行“安装”操作。"
+  },
+  {
+    "id": 72,
+    "word": "Remove",
+    "ipa": "/rɪˈmuːv/",
+    "meaning": "拆除",
+    "category": "maintenance",
+    "example": "Remove the part as instructed.",
+    "translation": "按照说明对零件进行“拆除”操作。"
+  },
+  {
+    "id": 73,
+    "word": "Replace",
+    "ipa": "/rɪˈpleɪs/",
+    "meaning": "更换",
+    "category": "maintenance",
+    "example": "Replace the part as instructed.",
+    "translation": "按照说明对零件进行“更换”操作。"
+  },
+  {
+    "id": 74,
+    "word": "Upgrade",
+    "ipa": "/ʌpˈɡreɪd/",
+    "meaning": "升级",
+    "category": "maintenance",
+    "example": "Upgrade the part as instructed.",
+    "translation": "按照说明对零件进行“升级”操作。"
+  },
+  {
+    "id": 75,
+    "word": "Adjust",
+    "ipa": "/əˈdʒʌst/",
+    "meaning": "调整",
+    "category": "maintenance",
+    "example": "Adjust the part as instructed.",
+    "translation": "按照说明对零件进行“调整”操作。"
+  },
+  {
+    "id": 76,
+    "word": "Tighten",
+    "ipa": "/ˈtaɪtən/",
+    "meaning": "拧紧",
+    "category": "maintenance",
+    "example": "Tighten the part as instructed.",
+    "translation": "按照说明对零件进行“拧紧”操作。"
+  },
+  {
+    "id": 77,
+    "word": "Loosen",
+    "ipa": "/ˈluːsən/",
+    "meaning": "松开",
+    "category": "maintenance",
+    "example": "Loosen the part as instructed.",
+    "translation": "按照说明对零件进行“松开”操作。"
+  },
+  {
+    "id": 78,
+    "word": "Assemble",
+    "ipa": "/əˈsembəl/",
+    "meaning": "组装",
+    "category": "maintenance",
+    "example": "Assemble the part as instructed.",
+    "translation": "按照说明对零件进行“组装”操作。"
+  },
+  {
+    "id": 79,
+    "word": "Disassemble",
+    "ipa": "/ˌdɪsəˈsembəl/",
+    "meaning": "拆解",
+    "category": "maintenance",
+    "example": "Disassemble the part as instructed.",
+    "translation": "按照说明对零件进行“拆解”操作。"
+  },
+  {
+    "id": 80,
+    "word": "Lubricate",
+    "ipa": "/ˈluːbrɪkeɪt/",
+    "meaning": "润滑",
+    "category": "maintenance",
+    "example": "Lubricate the part as instructed.",
+    "translation": "按照说明对零件进行“润滑”操作。"
+  },
+  {
+    "id": 81,
+    "word": "Apply",
+    "ipa": "/əˈplaɪ/",
+    "meaning": "涂抹/施加",
+    "category": "maintenance",
+    "example": "Apply the part as instructed.",
+    "translation": "按照说明对零件进行“涂抹”操作。"
+  },
+  {
+    "id": 82,
+    "word": "Insert",
+    "ipa": "/ɪnˈsɝːt/",
+    "meaning": "插入",
+    "category": "maintenance",
+    "example": "Insert the part as instructed.",
+    "translation": "按照说明对零件进行“插入”操作。"
+  },
+  {
+    "id": 83,
+    "word": "Align",
+    "ipa": "/əˈlaɪn/",
+    "meaning": "对齐",
+    "category": "maintenance",
+    "example": "Align the part as instructed.",
+    "translation": "按照说明对零件进行“对齐”操作。"
+  },
+  {
+    "id": 84,
+    "word": "Secure",
+    "ipa": "/sɪˈkjʊr/",
+    "meaning": "固定",
+    "category": "maintenance",
+    "example": "Secure the part as instructed.",
+    "translation": "按照说明对零件进行“固定”操作。"
+  },
+  {
+    "id": 85,
+    "word": "Inspect",
+    "ipa": "/ɪnˈspekt/",
+    "meaning": "检查",
+    "category": "maintenance",
+    "example": "Inspect the part as instructed.",
+    "translation": "按照说明对零件进行“检查”操作。"
+  },
+  {
+    "id": 86,
+    "word": "Check",
+    "ipa": "/tʃek/",
+    "meaning": "检查/确认",
+    "category": "maintenance",
+    "example": "Check the part as instructed.",
+    "translation": "按照说明对零件进行“检查”操作。"
+  },
+  {
+    "id": 87,
+    "word": "Damage",
+    "ipa": "/ˈdæmɪdʒ/",
+    "meaning": "损坏",
+    "category": "maintenance",
+    "example": "Damage the part as instructed.",
+    "translation": "按照说明对零件进行“损坏”操作。"
+  },
+  {
+    "id": 88,
+    "word": "Wear",
+    "ipa": "/wer/",
+    "meaning": "磨损",
+    "category": "maintenance",
+    "example": "Check the gears for wear.",
+    "translation": "检查齿轮是否磨损。"
+  },
+  {
+    "id": 89,
+    "word": "Strip",
+    "ipa": "/strɪp/",
+    "meaning": "滑牙/扫齿",
+    "category": "maintenance",
+    "example": "Do not strip the screw threads.",
+    "translation": "不要把螺纹拧滑牙。"
+  },
+  {
+    "id": 90,
+    "word": "Bind",
+    "ipa": "/baɪnd/",
+    "meaning": "卡滞/运动受阻",
+    "category": "maintenance",
+    "example": "Make sure the steering does not bind.",
+    "translation": "确保转向机构不会卡滞。"
+  },
+  {
+    "id": 91,
+    "word": "Review",
+    "ipa": "/rɪˈvjuː/",
+    "meaning": "评测",
+    "category": "video",
+    "example": "Watch the LMT review.",
+    "translation": "观看 LMT 评测。"
+  },
+  {
+    "id": 92,
+    "word": "Comparison",
+    "ipa": "/kəmˈperɪsən/",
+    "meaning": "对比",
+    "category": "video",
+    "example": "Watch the tire comparison video.",
+    "translation": "观看轮胎对比视频。"
+  },
+  {
+    "id": 93,
+    "word": "Test",
+    "ipa": "/test/",
+    "meaning": "测试",
+    "category": "video",
+    "example": "Watch the off-road test.",
+    "translation": "观看越野测试。"
+  },
+  {
+    "id": 94,
+    "word": "Unboxing",
+    "ipa": "/ʌnˈbɑːksɪŋ/",
+    "meaning": "开箱",
+    "category": "video",
+    "example": "Watch the new LMT unboxing video.",
+    "translation": "观看新款 LMT 的开箱视频。"
+  },
+  {
+    "id": 95,
+    "word": "Tutorial",
+    "ipa": "/tuːˈtɔːriəl/",
+    "meaning": "教程",
+    "category": "video",
+    "example": "Follow the repair tutorial.",
+    "translation": "跟着维修教程操作。"
+  },
+  {
+    "id": 96,
+    "word": "Setup",
+    "ipa": "/ˈsetʌp/",
+    "meaning": "设置/调校",
+    "category": "video",
+    "example": "Watch the suspension setup guide.",
+    "translation": "观看悬挂调校指南。"
+  },
+  {
+    "id": 97,
+    "word": "Modification",
+    "ipa": "/ˌmɑːdəfɪˈkeɪʃən/",
+    "meaning": "改装",
+    "category": "video",
+    "example": "This video shows an LMT modification.",
+    "translation": "这个视频展示 LMT 改装。"
+  },
+  {
+    "id": 98,
+    "word": "Performance",
+    "ipa": "/pɚˈfɔːrməns/",
+    "meaning": "性能/表现",
+    "category": "video",
+    "example": "Test the truck’s performance.",
+    "translation": "测试车辆性能。"
+  },
+  {
+    "id": 99,
+    "word": "Durability",
+    "ipa": "/ˌdʊrəˈbɪləti/",
+    "meaning": "耐用性",
+    "category": "video",
+    "example": "Test the tire durability.",
+    "translation": "测试轮胎耐用性。"
+  },
+  {
+    "id": 100,
+    "word": "Worth",
+    "ipa": "/wɝːθ/",
+    "meaning": "值得",
+    "category": "video",
+    "example": "Is this upgrade worth it?",
+    "translation": "这项升级值得吗？"
+  }
+]

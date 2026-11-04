@@ -9,6 +9,7 @@ import Cropper from 'cropperjs'
 import 'cropperjs/dist/cropper.css'
 import { supabase } from './supabase'
 import { compressImage } from './imageCompression'
+import EnglishPage from './EnglishPage'
 
 const EMPTY_PROFILE = { nickname: '', wechat_id: '', group_names: [], avatar_url: '' }
 const CATEGORIES = ['全部好物', '整车', '配件', '电装', '工具']
@@ -905,6 +906,7 @@ function App() {
           <button className={page === 'manuals' || page === 'manual-admin' || page === 'manual-brand-admin' ? 'nav-link active' : 'nav-link'} onClick={() => setPage('manuals')}>说明书</button>
           <button className={page === 'market' ? 'nav-link active' : 'nav-link'} onClick={() => setPage('market')}>闲置集市</button>
           <button className={page === 'gallery' ? 'nav-link active' : 'nav-link'} onClick={() => setPage('gallery')}>靓图欣赏</button>
+          <button className={page === 'english' ? 'nav-link active' : 'nav-link'} onClick={() => setPage('english')}>RC 英语</button>
         </nav>
         <div className="header-actions">
           {session ? (
@@ -923,7 +925,7 @@ function App() {
       </header>
 
       <main>
-        {page === 'market' ? (
+        {page === 'english' ? <EnglishPage /> : page === 'market' ? (
           <section className="market-section" id="marketplace">
             <div className="section-heading">
               <div><h1>RC帮集市</h1><p>看看车友们最近在出什么好物。</p></div>
